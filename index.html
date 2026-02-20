@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+
+  <!-- ===== iOS PWA: viewport z safe area ===== -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+
+  <title>MW Project</title>
+
+  <!-- ===== PWA Manifest ===== -->
+  <link rel="manifest" href="manifest.json" />
+
+  <!-- ===== iOS Web App Meta ===== -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="MW Project" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+
+  <!-- ===== Apple Touch Icons (każdy rozmiar osobno dla iOS) ===== -->
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png" />
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png" />
+
+  <!-- ===== Splash screens iOS (podstawowe) ===== -->
+  <!-- iPhone 14 Pro Max -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1290x2796.png" />
+  <!-- iPhone 14 / 13 / 12 -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1170x2532.png" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<!-- ===== INTRO ANIMATION ===== -->
+<div id="intro-overlay">
+  <div class="blind-container">
+    <div class="blind-slat" style="--i:0"></div>
+    <div class="blind-slat" style="--i:1"></div>
+    <div class="blind-slat" style="--i:2"></div>
+    <div class="blind-slat" style="--i:3"></div>
+    <div class="blind-slat" style="--i:4"></div>
+    <div class="blind-slat" style="--i:5"></div>
+    <div class="blind-slat" style="--i:6"></div>
+    <div class="blind-slat" style="--i:7"></div>
+    <div class="blind-slat" style="--i:8"></div>
+    <div class="blind-slat" style="--i:9"></div>
+  </div>
+  <div class="intro-content">
+    <div class="intro-character">
+      <div class="character-body">
+        <div class="character-head"></div>
+        <div class="character-torso"></div>
+        <div class="character-arm left"></div>
+        <div class="character-arm right"></div>
+        <div class="character-cord"></div>
+      </div>
+    </div>
+    <div class="intro-logo">
+      <span class="intro-logo-mw">MW</span>
+      <span class="intro-logo-project">Project</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div id="auth-screen" class="screen hidden">
+  <div class="auth-bg-decor"></div>
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="logo-icon">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+          <rect width="40" height="40" rx="10" fill="#6B7C5C"/>
+          <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="#F5F0E8" font-family="Playfair Display" font-size="16" font-weight="700">MW</text>
+        </svg>
+      </div>
+      <span class="logo-text">MW Project</span>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form" class="auth-form">
+      <h2>Witaj z powrotem</h2>
+      <p class="auth-subtitle">Zaloguj się do swojego konta</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="twoj@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Hasło</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <div class="auth-options">
+        <a href="#" id="forgot-link">Zapomniałeś hasła?</a>
+      </div>
+      <button class="btn-primary full" id="login-btn">Zaloguj się</button>
+      <p class="auth-switch">Nie masz konta? <a href="#" id="go-register">Zarejestruj się</a></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" class="auth-form hidden">
+      <h2>Utwórz konto</h2>
+      <p class="auth-subtitle">Dołącz do MW Project</p>
+      <div class="form-group">
+        <label>Imię i nazwisko</label>
+        <input type="text" id="reg-name" placeholder="Jan Kowalski" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="twoj@email.com" />
+      </div>
+      <div class="form-group">
+        <label>Hasło</label>
+        <input type="password" id="reg-password" placeholder="Min. 6 znaków" />
+      </div>
+      <button class="btn-primary full" id="register-btn">Zarejestruj się</button>
+      <p class="auth-switch">Masz już konto? <a href="#" id="go-login">Zaloguj się</a></p>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="forgot-form" class="auth-form hidden">
+      <h2>Reset hasła</h2>
+      <p class="auth-subtitle">Wyślemy Ci link do resetu hasła</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="forgot-email" placeholder="twoj@email.com" />
+      </div>
+      <button class="btn-primary full" id="forgot-btn">Wyślij link</button>
+      <p class="auth-switch"><a href="#" id="back-login">← Powrót do logowania</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="app" class="hidden">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div id="sidebar-overlay"></div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <button id="sidebar-toggle" title="Zwiń/rozwiń">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15,18 9,12 15,6"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span class="nav-label">Dashboard</span>
+      </a>
+      <a href="#" class="nav-item" data-view="projects">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="nav-label">Projekty</span>
+      </a>
+      <a href="#" class="nav-item" data-view="calendar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span class="nav-label">Kalendarz</span>
+      </a>
+      <a href="#" class="nav-item" data-view="statistics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nav-label">Statystyki</span>
+      </a>
+      <a href="#" class="nav-item" data-view="notes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="nav-label">Notatki</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-projects">
+      <div class="sidebar-section-header">
+        <span>Moje projekty</span>
+        <button class="btn-icon" id="new-project-btn" title="Nowy projekt">+</button>
+      </div>
+      <div id="sidebar-project-list"></div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="user-info" id="user-info-sidebar">
+        <div class="user-avatar" id="user-avatar-sidebar">U</div>
+        <div class="user-details">
+          <span class="user-name" id="user-name-sidebar">Użytkownik</span>
+          <span class="user-email" id="user-email-sidebar">email</span>
+        </div>
+      </div>
+      <button class="btn-icon logout-btn" id="logout-btn" title="Wyloguj">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+      <button id="theme-toggle" title="Przełącz motyw">
+        <svg id="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main id="main-content">
+
+    <!-- DASHBOARD VIEW -->
+    <div id="view-dashboard" class="view">
+      <div class="view-header">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <button id="mobile-sidebar-toggle" title="Menu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <div>
+            <h1 id="dashboard-greeting">Dzień dobry!</h1>
+            <p class="view-subtitle" id="dashboard-date"></p>
+          </div>
+        </div>
+        <div class="header-clock" id="header-clock"></div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Quick Stats -->
+        <div class="dash-card stats-row">
+          <div class="quick-stat">
+            <div class="qs-value" id="qs-tasks">0</div>
+            <div class="qs-label">Moje zadania</div>
+          </div>
+          <div class="quick-stat">
+            <div class="qs-value" id="qs-overdue">0</div>
+            <div class="qs-label">Po terminie</div>
+          </div>
+          <div class="quick-stat">
+            <div class="qs-value" id="qs-projects">0</div>
+            <div class="qs-label">Projekty</div>
+          </div>
+          <div class="quick-stat">
+            <div class="qs-value" id="qs-done">0</div>
+            <div class="qs-label">Ukończone</div>
+          </div>
+        </div>
+
+        <!-- Upcoming Tasks -->
+        <div class="dash-card upcoming-tasks">
+          <div class="card-header">
+            <h3>Nadchodzące zadania</h3>
+            <span class="badge" id="upcoming-count">0</span>
+          </div>
+          <div id="upcoming-list" class="task-feed"></div>
+        </div>
+
+        <!-- Mini Calendar -->
+        <div class="dash-card mini-calendar-card">
+          <div class="card-header">
+            <h3 id="mini-cal-title">Styczeń 2025</h3>
+            <div class="cal-nav">
+              <button class="btn-icon" id="mini-prev">‹</button>
+              <button class="btn-icon" id="mini-next">›</button>
+            </div>
+          </div>
+          <div id="mini-calendar"></div>
+        </div>
+
+        <!-- Today's Tasks -->
+        <div class="dash-card today-tasks">
+          <div class="card-header">
+            <h3>Dzisiaj</h3>
+          </div>
+          <div id="today-list" class="task-feed"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS VIEW -->
+    <div id="view-projects" class="view hidden">
+      <div class="view-header">
+        <h1>Projekty</h1>
+        <div class="header-actions">
+          <button class="btn-secondary" id="show-archived-btn">Archiwum</button>
+          <button class="btn-primary" id="create-project-btn">+ Nowy projekt</button>
+        </div>
+      </div>
+      <div id="projects-grid" class="projects-grid"></div>
+    </div>
+
+    <!-- CALENDAR VIEW -->
+    <div id="view-calendar" class="view hidden">
+      <div class="view-header">
+        <h1>Kalendarz</h1>
+        <div class="header-actions">
+          <button class="btn-icon" id="cal-prev">‹</button>
+          <span id="cal-title" class="cal-title-text"></span>
+          <button class="btn-icon" id="cal-next">›</button>
+        </div>
+      </div>
+      <div id="full-calendar" class="full-calendar"></div>
+    </div>
+
+    <!-- STATISTICS VIEW -->
+    <div id="view-statistics" class="view hidden">
+      <div class="view-header">
+        <h1>Statystyki</h1>
+        <div class="header-actions">
+          <select id="stats-filter-project" class="select-input">
+            <option value="all">Wszystkie projekty</option>
+          </select>
+          <select id="stats-filter-period" class="select-input">
+            <option value="all">Cały czas</option>
+            <option value="week">Ten tydzień</option>
+            <option value="month">Ten miesiąc</option>
+          </select>
+          <select id="stats-sort" class="select-input">
+            <option value="name">Sortuj: Nazwa</option>
+            <option value="tasks">Sortuj: Zadania</option>
+            <option value="progress">Sortuj: Postęp</option>
+          </select>
+        </div>
+      </div>
+      <div id="stats-content" class="stats-grid"></div>
+    </div>
+
+    <!-- NOTES VIEW -->
+    <div id="view-notes" class="view hidden">
+      <div class="view-header">
+        <h1>Notatki</h1>
+        <button class="btn-primary" id="new-note-btn">+ Nowa notatka</button>
+      </div>
+      <div class="notes-layout">
+        <div id="notes-list" class="notes-list"></div>
+        <div id="note-editor" class="note-editor">
+          <div class="note-editor-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+            <p>Wybierz notatkę lub utwórz nową</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECT VIEW -->
+    <div id="view-project" class="view hidden">
+      <div class="view-header" style="flex-direction:column;align-items:flex-start;gap:0;padding:0;border-bottom:none;">
+
+        <!-- Górny pasek: cofnij + nazwa + status + akcje -->
+        <div style="display:flex;align-items:center;gap:.6rem;padding:.6rem 1.25rem .5rem;width:100%;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+          <div class="project-header-left">
+            <button class="btn-back" id="back-to-projects">← Projekty</button>
+            <h1 id="project-title-header">Projekt</h1>
+            <span class="project-status-badge" id="project-status-badge"></span>
+          </div>
+          <div class="header-actions" style="margin-left:auto;">
+            <button class="btn-secondary" id="project-members-btn">Członkowie</button>
+            <button class="btn-secondary" id="project-edit-btn">Edytuj</button>
+
+          </div>
+        </div>
+
+        <!-- Zakładki: Kanban · Lista · Kalendarz · Gantt -->
+        <div style="display:flex;align-items:center;padding:0 1.25rem;width:100%;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none;">
+          <button class="proj-tab active" id="project-view-kanban-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="12"/><rect x="17" y="3" width="5" height="15"/></svg>
+            Board
+          </button>
+          <button class="proj-tab" id="project-view-list-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            Lista
+          </button>
+          <button class="proj-tab" id="project-calendar-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Kalendarz
+          </button>
+          <button class="proj-tab" id="project-gantt-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+            Gantt
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Project Dashboard -->
+      <div id="project-dashboard" class="project-dashboard">
+        <div class="proj-stat-cards" id="proj-stat-cards"></div>
+        <div class="project-filters-bar">
+          <label>Filtruj: </label>
+          <select id="proj-filter-priority" class="select-input small">
+            <option value="all">Wszystkie priorytety</option>
+            <option value="high">Wysoki</option>
+            <option value="medium">Średni</option>
+            <option value="low">Niski</option>
+          </select>
+          <select id="proj-filter-assignee" class="select-input small">
+            <option value="all">Wszyscy</option>
+          </select>
+
+        </div>
+      </div>
+
+      <!-- Kanban Board -->
+      <div id="kanban-board" class="kanban-board"></div>
+
+      <!-- Project List View -->
+      <div id="project-list-view" class="project-list-view hidden">
+        <div class="project-list-toolbar">
+          <input type="text" id="project-list-search" class="list-search" placeholder="Szukaj zadań w projekcie..." />
+          <label class="list-toggle">
+            <input type="checkbox" id="project-list-show-done" checked />
+            <span>Pokaż zakończone</span>
+          </label>
+          <div class="list-add-split-wrap">
+            <button class="list-add-split-main" id="list-add-task-global">
+              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Dodaj zadanie
+            </button>
+            <button class="list-add-split-arrow" id="list-add-split-arrow" title="Więcej opcji">
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="list-add-split-menu hidden" id="list-add-split-menu">
+              <button class="list-add-split-menu-item" id="list-add-section-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                Dodaj sekcję
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="project-list-container" class="project-list-container"></div>
+      </div>
+
+      <!-- Project Calendar -->
+      <div id="project-calendar-view" class="hidden" style="padding:1rem 1.25rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;">
+          <h3 style="font-size:.9rem;font-weight:600;flex:1;">Kalendarz projektu</h3>
+          <button class="btn-icon" id="proj-cal-prev">‹</button>
+          <span id="proj-cal-title" style="font-size:.85rem;font-weight:600;min-width:120px;text-align:center;"></span>
+          <button class="btn-icon" id="proj-cal-next">›</button>
+          <button class="btn-secondary small" id="close-proj-cal">✕ Zamknij</button>
+        </div>
+        <div id="project-calendar-grid" class="full-calendar"></div>
+      </div>
+
+      <!-- Gantt Chart -->
+      <div id="gantt-view" class="hidden" style="padding:1rem 1.25rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;">
+          <h3 style="font-size:.9rem;font-weight:600;flex:1;">Wykres Gantta</h3>
+          <button class="btn-secondary small" id="close-gantt">✕ Zamknij</button>
+        </div>
+        <div id="gantt-container" class="gantt-container"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== iOS BOTTOM TAB BAR (tylko mobile) ===== -->
+  <nav id="bottom-tab-bar">
+    <button class="tab-btn active" data-view="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Dashboard</span>
+    </button>
+    <button class="tab-btn" data-view="projects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span>Projekty</span>
+    </button>
+    <button class="tab-btn" data-view="calendar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <span>Kalendarz</span>
+    </button>
+    <button class="tab-btn" data-view="statistics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Statystyki</span>
+    </button>
+    <button class="tab-btn" data-view="notes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <span>Notatki</span>
+    </button>
+  </nav>
+
+</div>
+
+<!-- ===== MODALS ===== -->
+
+<!-- Task Modal -->
+<div id="task-modal" class="modal hidden">
+  <div class="modal-overlay" id="task-modal-overlay"></div>
+  <div class="modal-panel task-modal-panel">
+    <div class="modal-header">
+      <div class="modal-title-area">
+        <input type="text" id="task-title-input" class="task-title-input" placeholder="Tytuł zadania..." />
+        <span class="task-id-badge" id="task-id-badge"></span>
+      </div>
+      <button class="btn-icon modal-close" id="close-task-modal">✕</button>
+    </div>
+    <div class="modal-body task-modal-body">
+      <div class="task-main">
+        <!-- Description -->
+        <div class="task-section">
+          <label class="task-label">Opis</label>
+          <textarea id="task-desc" class="task-textarea" placeholder="Dodaj opis..."></textarea>
+        </div>
+
+        <!-- Checklist -->
+        <div class="task-section">
+          <div class="section-header-row">
+            <label class="task-label">Checklista</label>
+            <button class="btn-secondary small" id="add-checklist-item-btn">+ Dodaj</button>
+          </div>
+          <div id="checklist-container"></div>
+          <div id="checklist-progress-bar" class="checklist-progress-bar hidden">
+            <div id="checklist-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="task-section">
+          <div class="section-header-row">
+            <label class="task-label">Załączniki</label>
+            <label class="btn-secondary small" for="attachment-upload">+ Dodaj plik</label>
+            <input type="file" id="attachment-upload" multiple style="display:none" />
+          </div>
+          <div id="attachments-list" class="attachments-list"></div>
+        </div>
+
+        <!-- Comments -->
+        <div class="task-section">
+          <label class="task-label">Komentarze</label>
+          <div id="comments-list" class="comments-list"></div>
+          <div class="comment-input-area">
+            <div class="user-avatar small" id="comment-avatar">U</div>
+            <div class="comment-input-wrap">
+              <div id="comment-input" class="comment-input" contenteditable="true" data-placeholder="Dodaj komentarz... (@użytkownik aby oznaczyć)"></div>
+              <div id="mention-dropdown" class="mention-dropdown hidden"></div>
+              <button class="btn-primary small" id="submit-comment-btn">Wyślij</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div class="task-section">
+          <div id="history-toggle" style="display:flex;align-items:center;gap:.4rem;cursor:pointer;user-select:none;">
+            <svg id="history-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="transform:rotate(-90deg);transition:transform .2s ease;color:var(--text-muted);flex-shrink:0;"><polyline points="6 9 12 15 18 9"/></svg>
+            <label class="task-label" style="cursor:pointer;margin:0;">Historia zmian</label>
+          </div>
+          <div id="task-history-wrap" style="display:none;margin-top:.4rem;">
+            <div id="task-history" class="task-history"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-sidebar">
+        <!-- Column -->
+        <div class="task-meta-item">
+          <label>Kolumna</label>
+          <select id="task-status-select" class="select-input"></select>
+        </div>
+        <!-- Task Status -->
+        <div class="task-meta-item">
+          <label>Status zadania</label>
+          <select id="task-state-select" class="select-input">
+            <option value="open">Otwarte</option>
+            <option value="done">Zakończone</option>
+          </select>
+        </div>
+        <!-- Priority -->
+        <div class="task-meta-item">
+          <label>Priorytet</label>
+          <select id="task-priority-select" class="select-input">
+            <option value="low">🟢 Niski</option>
+            <option value="medium">🟡 Średni</option>
+            <option value="high">🔴 Wysoki</option>
+          </select>
+        </div>
+        <!-- Assignee -->
+        <div class="task-meta-item">
+          <label>Przypisany</label>
+          <select id="task-assignee-select" class="select-input">
+            <option value="">— Nieprzypisany —</option>
+          </select>
+        </div>
+        <!-- Due Date -->
+        <div class="task-meta-item">
+          <label>Termin</label>
+          <input type="date" id="task-due-date" class="select-input" />
+        </div>
+        <!-- Project -->
+        <div class="task-meta-item">
+          <label>Projekt</label>
+          <span id="task-project-name" class="meta-value">—</span>
+        </div>
+        <!-- Created At -->
+        <div class="task-meta-item">
+          <label>Utworzono</label>
+          <span id="task-created-at" class="meta-value" style="font-size:.72rem;color:var(--text-muted);">—</span>
+          <span id="task-created-by" style="font-size:.70rem;color:var(--text-light);margin-top:.1rem;display:block;">—</span>
+        </div>
+        <div id="autosave-indicator" style="font-size:.7rem;color:var(--text-light);text-align:center;min-height:1.1rem;margin-bottom:.35rem;"></div>
+        <button class="btn-danger full" id="delete-task-btn">🗑 Usuń zadanie</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project Modal -->
+<div id="project-modal" class="modal hidden">
+  <div class="modal-overlay" id="project-modal-overlay"></div>
+  <div class="modal-panel small-panel">
+    <div class="modal-header">
+      <h2 id="project-modal-title">Nowy projekt</h2>
+      <button class="btn-icon modal-close" id="close-project-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nazwa projektu</label>
+        <input type="text" id="proj-name-input" placeholder="Nazwa projektu..." />
+      </div>
+      <div class="form-group">
+        <label>Opis</label>
+        <textarea id="proj-desc-input" placeholder="Krótki opis projektu..." rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Data zakończenia</label>
+        <input type="date" id="proj-deadline-input" />
+      </div>
+      <div class="form-group">
+        <label>Kolor</label>
+        <div class="color-btn-wrap" id="proj-color-picker">
+          <button type="button" class="color-pick-btn" id="proj-color-btn" title="Wybierz kolor">
+            <span class="color-pick-swatch" id="proj-color-swatch" style="background:#6B7C5C"></span>
+            <span class="color-pick-label" id="proj-color-label">#6B7C5C</span>
+          </button>
+          <input type="color" id="proj-color-input" value="#6B7C5C" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancel-project-modal">Anuluj</button>
+        <button class="btn-primary" id="save-project-btn">Zapisz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Column Modal -->
+<div id="column-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel small-panel">
+    <div class="modal-header">
+      <h2 id="column-modal-title">Nowa kolumna</h2>
+      <button class="btn-icon modal-close" id="close-column-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nazwa kolumny</label>
+        <input type="text" id="column-name-input" placeholder="np. W toku, Gotowe..." />
+      </div>
+      <div class="form-group">
+        <label>Kolor nagłówka</label>
+        <div class="color-btn-wrap" id="col-color-picker">
+          <button type="button" class="color-pick-btn" id="col-color-btn" title="Wybierz kolor">
+            <span class="color-pick-swatch" id="col-color-swatch" style="background:#6B7C5C"></span>
+            <span class="color-pick-label" id="col-color-label">#6B7C5C</span>
+          </button>
+          <input type="color" id="col-color-input" value="#6B7C5C" style="position:absolute;opacity:0;pointer-events:none;width:0;height:0;" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancel-column-modal">Anuluj</button>
+        <button class="btn-primary" id="save-column-btn">Zapisz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Members Modal -->
+<div id="members-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel small-panel">
+    <div class="modal-header">
+      <h2>Członkowie projektu</h2>
+      <button class="btn-icon modal-close" id="close-members-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Dodaj członka (email)</label>
+        <div style="display:flex;gap:.5rem">
+          <input type="email" id="member-email-input" placeholder="email@przykład.com" style="flex:1" />
+          <button class="btn-primary" id="add-member-btn">Dodaj</button>
+        </div>
+      </div>
+      <div id="members-list" class="members-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Note Modal (quick add) -->
+<div id="note-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel small-panel">
+    <div class="modal-header">
+      <h2>Nowa notatka</h2>
+      <button class="btn-icon modal-close" id="close-note-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Tytuł</label>
+        <input type="text" id="note-title-input" placeholder="Tytuł notatki..." />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancel-note-modal">Anuluj</button>
+        <button class="btn-primary" id="save-note-modal-btn">Utwórz</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div id="confirm-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel small-panel" style="max-width:360px">
+    <div class="modal-header">
+      <h2 id="confirm-title">Potwierdź</h2>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message">Czy na pewno chcesz wykonać tę akcję?</p>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="confirm-cancel">Anuluj</button>
+        <button class="btn-danger" id="confirm-ok">Potwierdź</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Change Password Modal -->
+<div id="change-password-modal" class="modal hidden">
+  <div class="modal-overlay"></div>
+  <div class="modal-panel small-panel">
+    <div class="modal-header">
+      <h2>Zmiana hasła</h2>
+      <button class="btn-icon modal-close" id="close-change-pw-modal">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Nowe hasło</label>
+        <input type="password" id="new-password-input" placeholder="Min. 6 znaków" />
+      </div>
+      <div class="form-group">
+        <label>Potwierdź nowe hasło</label>
+        <input type="password" id="confirm-password-input" placeholder="Powtórz hasło" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancel-change-pw">Anuluj</button>
+        <button class="btn-primary" id="save-new-password-btn">Zapisz hasło</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="firebase.js"></script>
+<script type="module" src="app.js"></script>
+<script>
+  // ===== THEME TOGGLE =====
+  (function() {
+    const html = document.documentElement;
+    const saved = localStorage.getItem('mw-theme') || 'light';
+    if (saved === 'dark') html.setAttribute('data-theme', 'dark');
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('theme-toggle');
+      const moon = document.getElementById('theme-icon-moon');
+      const sun = document.getElementById('theme-icon-sun');
+      if (!btn) return;
+
+      function applyTheme(theme) {
+        if (theme === 'dark') {
+          html.setAttribute('data-theme', 'dark');
+          moon.style.display = 'none';
+          sun.style.display = 'block';
+          btn.title = 'Tryb jasny';
+          document.querySelector('meta[name="theme-color"][media*="dark"]')?.setAttribute('content','#1C1C1E');
+        } else {
+          html.removeAttribute('data-theme');
+          moon.style.display = 'block';
+          sun.style.display = 'none';
+          btn.title = 'Tryb ciemny';
+        }
+        localStorage.setItem('mw-theme', theme);
+      }
+      applyTheme(saved);
+      btn.addEventListener('click', function() {
+        const current = html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        applyTheme(current === 'dark' ? 'light' : 'dark');
+      });
+    });
+  })();
+
+  // ===== SIDEBAR COLLAPSE =====
+  (function() {
+    const isMobile = () => window.innerWidth <= 768;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const sidebar = document.getElementById('sidebar');
+      const appEl = document.getElementById('app');
+      const overlay = document.getElementById('sidebar-overlay');
+      const desktopToggle = document.getElementById('sidebar-toggle');
+      const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+
+      const savedCollapsed = localStorage.getItem('mw-sidebar-collapsed') === 'true';
+      if (!isMobile() && savedCollapsed) {
+        sidebar.classList.add('collapsed');
+        appEl.classList.add('sidebar-collapsed');
+      }
+
+      if (desktopToggle) {
+        desktopToggle.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isMobile()) return;
+          const isCollapsed = sidebar.classList.toggle('collapsed');
+          appEl.classList.toggle('sidebar-collapsed', isCollapsed);
+          localStorage.setItem('mw-sidebar-collapsed', isCollapsed);
+        });
+      }
+
+      function openMobileSidebar() {
+        sidebar.classList.add('mobile-open');
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => {
+          overlay.style.opacity = '1';
+          overlay.style.pointerEvents = 'auto';
+        });
+        document.body.style.overflow = 'hidden';
+      }
+      function closeMobileSidebar() {
+        sidebar.classList.remove('mobile-open');
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        setTimeout(() => { if (!sidebar.classList.contains('mobile-open')) overlay.style.display = 'none'; }, 250);
+        document.body.style.overflow = '';
+      }
+
+      if (mobileToggle) {
+        mobileToggle.addEventListener('click', function() {
+          sidebar.classList.contains('mobile-open') ? closeMobileSidebar() : openMobileSidebar();
+        });
+      }
+      overlay.addEventListener('click', closeMobileSidebar);
+
+      sidebar.querySelectorAll('.nav-item, .sidebar-project-item').forEach(item => {
+        item.addEventListener('click', function() { if (isMobile()) closeMobileSidebar(); });
+      });
+
+      window.addEventListener('resize', function() {
+        if (!isMobile()) {
+          sidebar.classList.remove('mobile-open');
+          overlay.style.display = 'none';
+          overlay.style.opacity = '0';
+          document.body.style.overflow = '';
+          const isCollapsed = localStorage.getItem('mw-sidebar-collapsed') === 'true';
+          sidebar.classList.toggle('collapsed', isCollapsed);
+          appEl.classList.toggle('sidebar-collapsed', isCollapsed);
+        }
+      });
+    });
+  })();
+
+  // ===== iOS PWA FIXES — COMPREHENSIVE =====
+  (function() {
+
+    // ── 1. Detect standalone (PWA) mode ──────────────────────────────
+    var isStandalone = window.navigator.standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches;
+    if (isStandalone) document.documentElement.classList.add('pwa-standalone');
+
+    // ── 2. Dynamic viewport height (fixes 100vh bug on iOS Safari) ──
+    function setAppHeight() {
+      var h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+      document.documentElement.style.setProperty('--app-height', h + 'px');
+    }
+    setAppHeight();
+    window.addEventListener('resize', setAppHeight, { passive: true });
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', setAppHeight, { passive: true });
+    }
+    window.addEventListener('orientationchange', function() {
+      setTimeout(setAppHeight, 300);
+      setTimeout(setAppHeight, 700);
+    }, { passive: true });
+
+    // ── 3. Prevent body bounce/overscroll on standalone PWA ──────────
+    if (isStandalone) {
+      document.body.addEventListener('touchmove', function(e) {
+        if (e.target === document.body || e.target === document.documentElement) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
+
+    // ── 4. Eliminate 300ms tap delay ─────────────────────────────────
+    document.addEventListener('touchstart', function() {}, { passive: true });
+
+    // ── 5. iOS keyboard: scroll focused element into view, tap-to-dismiss ──
+    (function() {
+      var lastFocused = null;
+      document.addEventListener('focusin', function(e) {
+        var el = e.target;
+        if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') {
+          lastFocused = el;
+          setTimeout(function() {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          }, 350);
+        }
+      }, true);
+      document.addEventListener('focusout', function() {
+        setTimeout(function() {
+          var active = document.activeElement;
+          if (!active || (active.tagName !== 'INPUT' && active.tagName !== 'TEXTAREA' && active.tagName !== 'SELECT')) {
+            lastFocused = null;
+            setTimeout(setAppHeight, 300);
+          }
+        }, 100);
+      }, true);
+      // Tap outside input to dismiss keyboard
+      document.addEventListener('touchend', function(e) {
+        var el = e.target;
+        if (lastFocused && el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA' &&
+            el.tagName !== 'SELECT' && !el.isContentEditable) {
+          lastFocused.blur();
+        }
+      }, { passive: true });
+    })();
+
+    // ── 6. Prevent double-tap zoom on interactive elements ───────────
+    var lastTouchEnd = 0;
+    document.addEventListener('touchend', function(e) {
+      var now = Date.now();
+      if (now - lastTouchEnd < 300) {
+        var t = e.target;
+        if (t.tagName === 'BUTTON' || t.tagName === 'A' ||
+            t.closest && (t.closest('button') || t.closest('a') ||
+            t.closest('.tab-btn') || t.closest('.task-card') ||
+            t.closest('.project-card') || t.closest('.nav-item'))) {
+          e.preventDefault();
+        }
+      }
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    // ── 7. DOM ready: tabs + service worker ──────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+      var tabBtns = document.querySelectorAll('#bottom-tab-bar .tab-btn');
+      tabBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var view = this.dataset.view;
+          var navItem = document.querySelector('.nav-item[data-view="' + view + '"]');
+          if (navItem) navItem.click();
+          tabBtns.forEach(function(b) { b.classList.remove('active'); });
+          this.classList.add('active');
+        });
+      });
+      document.querySelectorAll('.nav-item[data-view]').forEach(function(item) {
+        item.addEventListener('click', function() {
+          var view = this.dataset.view;
+          tabBtns.forEach(function(b) {
+            b.classList.toggle('active', b.dataset.view === view);
+          });
+        });
+      });
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(function() {});
+      }
+    });
+
+  })();
+</script>
+<!-- Modal potwierdzenia dodania zadania -->
+<div id="add-task-confirm-modal" class="modal hidden">
+  <div class="modal-overlay" id="add-task-confirm-overlay"></div>
+  <div class="modal-panel" style="max-width:380px;padding:1.5rem;">
+    <div style="font-weight:700;font-size:.95rem;margin-bottom:1rem;">Nowe zadanie</div>
+    <input id="add-task-confirm-title" type="text" class="form-input" placeholder="Nazwa zadania..." style="width:100%;margin-bottom:1.25rem;" />
+    <div style="display:flex;gap:.5rem;justify-content:flex-end;">
+      <button class="btn-secondary" id="add-task-confirm-cancel">Anuluj</button>
+      <button class="btn-primary" id="add-task-confirm-ok">Utwórz zadanie</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
