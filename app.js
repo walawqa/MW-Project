@@ -46,14 +46,14 @@ let collapsedSaveTimeout = null;
 // LIST COLUMN CONFIG (per user, saved to Firestore)
 // ============================================================
 const LIST_COLUMNS_DEFAULT = [
-  { id: 'checkbox',  label: '',             width: 36,  visible: true,  resizable: false },
-  { id: 'title',     label: 'Nazwa zadania',width: null,visible: true,  resizable: false, flex: true },
-  { id: 'desc',      label: 'Opis',         width: 200, visible: false, resizable: false },
-  { id: 'assignee',  label: 'Osoba',        width: 130, visible: true,  resizable: false },
-  { id: 'status',    label: 'Status',       width: 100, visible: true,  resizable: false },
-  { id: 'due',       label: 'Termin',       width: 90,  visible: true,  resizable: false },
+  { id: 'checkbox',  label: 'Check',        width: 55,  visible: true,  resizable: false },
+  { id: 'title',     label: 'Nazwa zadania',width: 200,visible: true,  resizable: false, flex: true },
+  { id: 'desc',      label: 'Opis',         width: 250, visible: false, resizable: false },
+  { id: 'assignee',  label: 'Osoba',        width: 190, visible: true,  resizable: false },
+  { id: 'status',    label: 'Kolumna',      width: 100, visible: true,  resizable: false },
+  { id: 'due',       label: 'Termin',       width: 75,  visible: true,  resizable: false },
   { id: 'priority',  label: 'Priorytet',    width: 90,  visible: true,  resizable: false },
-  { id: 'created',   label: 'Utworzono',    width: 110, visible: false, resizable: false },
+  { id: 'created',   label: 'Utworzono',    width: 95, visible: false, resizable: false },
 ];
 let listColumnConfig = null;
 let listColSaveTimeout = null;
@@ -82,7 +82,26 @@ async function loadListColumnConfig() {
   try {
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     const saved = snap.data()?.listColumnConfig;
-    if (saved && Array.isArray(saved)) listColumnConfig = saved;
+
+    if (saved && Array.isArray(saved)) {
+      // Z Firestore bierzemy tylko visible i kolejnosc.
+      // width zawsze pochodzi z LIST_COLUMNS_DEFAULT — zmiany w kodzie dzialaja od razu.
+      listColumnConfig = saved
+        .map(s => {
+          const def = LIST_COLUMNS_DEFAULT.find(d => d.id === s.id);
+          if (!def) return null; // kolumna usunieta z defaults — ignoruj
+          return { id: s.id, width: def.width, visible: s.visible ?? def.visible };
+        })
+        .filter(Boolean);
+
+      // Dodaj kolumny, ktorych jeszcze nie ma w Firestore (nowe kolumny dodane w kodzie)
+      LIST_COLUMNS_DEFAULT.forEach(def => {
+        if (!listColumnConfig.find(c => c.id === def.id)) {
+          listColumnConfig.push({ id: def.id, width: def.width, visible: def.visible });
+        }
+      });
+    }
+    // Jesli brak zapisu — listColumnConfig pozostaje null, getListColumns() uzyje defaults
   } catch(e) {}
 }
 
@@ -2312,8 +2331,9 @@ function setupEventListeners() {
   }
 
   // Task modal
-  $('close-task-modal').addEventListener('click', () => closeModal('task-modal'));
-  $('task-modal-overlay').addEventListener('click', () => closeModal('task-modal'));
+  const clearTaskUrl = () => { if (new URLSearchParams(location.search).get('task')) history.replaceState(null, '', location.origin + location.pathname); };
+  $('close-task-modal').addEventListener('click', () => { closeModal('task-modal'); clearTaskUrl(); });
+  $('task-modal-overlay').addEventListener('click', () => { closeModal('task-modal'); clearTaskUrl(); });
 
   // Autosave: pola tekstowe z debounce 1.2s
   $('task-title-input')?.addEventListener('input', scheduleAutoSave);
@@ -2350,6 +2370,13 @@ function setupEventListeners() {
   $('submit-comment-btn').addEventListener('click', submitComment);
   setupMentionDropdown();
   setupCommentImageInput();
+
+  // Copy task link
+  $('copy-task-link-btn')?.addEventListener('click', () => {
+    if (!currentTaskId) return;
+    const url = `${location.origin}${location.pathname}?task=${currentTaskId}`;
+    navigator.clipboard.writeText(url).then(() => showToast('Link skopiowany!', 'success')).catch(() => showToast('Nie udało się skopiować linku', 'error'));
+  });
 
   // Attachments
   $('attachment-upload').addEventListener('change', e => uploadAttachment(e.target.files));
@@ -2548,6 +2575,24 @@ async function initApp() {
       await loadCollapsedSections();
       await loadListColumnConfig();
       navigateTo('dashboard');
+
+      // Otwórz zadanie z URL ?task=ID
+      const urlParams = new URLSearchParams(location.search);
+      const taskIdFromUrl = urlParams.get('task');
+      if (taskIdFromUrl) {
+        let attempts = 0;
+        const tryOpenFromUrl = async () => {
+          const task = getTaskById(taskIdFromUrl);
+          if (task) {
+            await openTaskModal(taskIdFromUrl, task.projectId);
+          } else if (attempts++ < 20) {
+            setTimeout(tryOpenFromUrl, 200);
+          } else {
+            showToast('Nie znaleziono zadania z linku', 'error');
+          }
+        };
+        tryOpenFromUrl();
+      }
     } else {
       currentUser = null;
       showAuthScreen();
