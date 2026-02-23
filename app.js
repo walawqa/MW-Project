@@ -41,16 +41,20 @@ let draggedTaskId = null;
 let draggedColId = null;
 let collapsedSections = {}; // { projectId: Set of collapsed colIds }
 let collapsedSaveTimeout = null;
+let inboxItems = {};
+let inboxUnsubscribe = null;
+let chatUnsubscribe = null;
+let chatProjectId = null;
 
 // ============================================================
 // LIST COLUMN CONFIG (per user, saved to Firestore)
 // ============================================================
 const LIST_COLUMNS_DEFAULT = [
-  { id: 'checkbox',  label: 'Check',        width: 55,  visible: true,  resizable: false },
+  { id: 'checkbox',  label: '',        width: 30,  visible: true,  resizable: false },
   { id: 'title',     label: 'Nazwa zadania',width: 200,visible: true,  resizable: false, flex: true },
   { id: 'desc',      label: 'Opis',         width: 250, visible: false, resizable: false },
   { id: 'assignee',  label: 'Osoba',        width: 190, visible: true,  resizable: false },
-  { id: 'status',    label: 'Kolumna',      width: 100, visible: true,  resizable: false },
+  { id: 'status',    label: 'Sekcja',      width: 100, visible: true,  resizable: false },
   { id: 'due',       label: 'Termin',       width: 75,  visible: true,  resizable: false },
   { id: 'priority',  label: 'Priorytet',    width: 90,  visible: true,  resizable: false },
   { id: 'created',   label: 'Utworzono',    width: 95, visible: false, resizable: false },
@@ -297,10 +301,14 @@ async function logout() {
   await signOut(auth);
   Object.values(projectListeners).forEach(u => u());
   Object.values(taskListeners).forEach(u => u());
+  if (inboxUnsubscribe) { inboxUnsubscribe(); inboxUnsubscribe = null; }
+  if (chatUnsubscribe) { chatUnsubscribe(); chatUnsubscribe = null; }
+  chatProjectId = null;
   projectListeners = {};
   taskListeners = {};
   projects = {};
   tasks = {};
+  inboxItems = {};
   collapsedSections = {};
   listColumnConfig = null;
 }
@@ -323,6 +331,7 @@ function navigateTo(view, extraData) {
   if (view === 'calendar') renderFullCalendar();
   if (view === 'statistics') renderStatistics();
   if (view === 'notes') renderNotes();
+  if (view === 'inbox') renderInbox();
   if (view === 'project' && extraData) openProject(extraData);
 }
 
@@ -595,71 +604,125 @@ function renderSidebarProjects() {
 // ============================================================
 function renderDashboard() {
   renderDashboardStats();
-  renderUpcomingTasks();
-  renderTodayTasks();
+  renderDashboardTasks();
+  renderDashboardProjects();
   renderMiniCalendar();
+  initDashboardTabs();
 }
 
 function renderDashboardStats() {
-  const myTasks = getAllMyTasks();
-  const overdue = myTasks.filter(t => isOverdue(t.dueDate));
+  const myTasks = getAllProjectTasks().filter(t => t.assigneeId === currentUser.uid);
   const done = myTasks.filter(t => isTaskDone(t));
-  $('qs-tasks').textContent = myTasks.length;
-  $('qs-overdue').textContent = overdue.length;
-  $('qs-projects').textContent = Object.values(projects).filter(p => !p.archived).length;
   $('qs-done').textContent = done.length;
+  $('qs-projects').textContent = Object.values(projects).filter(p => !p.archived).length;
+  // avatar
+  const av = $('dash-user-avatar');
+  if (av && currentUser?.displayName) av.textContent = currentUser.displayName.charAt(0).toUpperCase();
 }
 
-function renderUpcomingTasks() {
-  const list = $('upcoming-list');
+function renderDashboardTasks() {
+  const allTasks = getAllProjectTasks().filter(t => t.assigneeId === currentUser.uid);
+  const today = new Date(); today.setHours(0,0,0,0);
 
-  // Nadchodzące = wszystkie zadania z terminem od jutra wzwyż (bez limitu 7 dni)
-  const startTomorrow = new Date();
-  startTomorrow.setHours(0, 0, 0, 0);
-  startTomorrow.setDate(startTomorrow.getDate() + 1);
-
-  const allTasks = getAllProjectTasks();
+  // Nadchodzące: niezakończone (termin dziś lub w przyszłości, lub bez terminu)
   const upcoming = allTasks
     .filter(t => {
-      if (!t.dueDate) return false;
-      const d = new Date(t.dueDate);
-      if (isNaN(d.getTime())) return false;
-      if (d < startTomorrow) return false; // jutro i dalej
       if (isTaskDone(t)) return false;
-      return t.assigneeId === currentUser.uid || !t.assigneeId;
+      if (t.dueDate) {
+        const d = new Date(t.dueDate); d.setHours(0,0,0,0);
+        if (d < today) return false; // zaległe trafiają do innej zakładki
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+      if (a.dueDate) return -1; if (b.dueDate) return 1; return 0;
+    });
+
+  // Zaległe: niezakończone z terminem w przeszłości
+  const overdue = allTasks
+    .filter(t => {
+      if (isTaskDone(t)) return false;
+      if (!t.dueDate) return false;
+      const d = new Date(t.dueDate); d.setHours(0,0,0,0);
+      return d < today;
     })
     .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-  $('upcoming-count').textContent = upcoming.length;
-  if (!upcoming.length) {
-    list.innerHTML = '<div class="empty-state"><p>Brak nadchodzących zadań 🎉</p></div>';
+  // Ukończone
+  const done = allTasks
+    .filter(t => isTaskDone(t))
+    .sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+
+  const renderList = (listId, items, emptyMsg) => {
+    const list = $(listId);
+    if (!list) return;
+    if (!items.length) {
+      list.innerHTML = `<div class="empty-state"><p>${emptyMsg}</p></div>`;
+      return;
+    }
+    list.innerHTML = items.map(t => taskFeedItem(t)).join('');
+    list.querySelectorAll('.task-feed-item').forEach(el => {
+      el.addEventListener('click', () => openTaskModal(el.dataset.id, el.dataset.project));
+    });
+    list.querySelectorAll('.feed-check-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const task = getTaskById(btn.dataset.id);
+        if (!task) return;
+        const newStatus = isTaskDone(task) ? 'open' : 'done';
+        try {
+          await updateTask(btn.dataset.id, { status: newStatus }, { action: newStatus === 'done' ? 'Oznaczono jako zakończone' : 'Przywrócono jako otwarte' });
+        } catch(err) { showToast('Nie udało się zmienić statusu', 'error'); }
+      });
+    });
+  };
+
+  renderList('upcoming-list', upcoming, 'Brak nadchodzących zadań 🎉');
+  renderList('overdue-list', overdue, 'Brak zaległych zadań ✅');
+  renderList('done-list', done, 'Brak ukończonych zadań');
+}
+
+function renderDashboardProjects() {
+  const grid = $('dash-projects-grid');
+  if (!grid) return;
+  const active = Object.values(projects).filter(p => !p.archived);
+  if (!active.length) {
+    grid.innerHTML = '<div class="empty-state"><p>Brak projektów</p></div>';
     return;
   }
-  list.innerHTML = upcoming.map(t => taskFeedItem(t)).join('');
-  list.querySelectorAll('.task-feed-item').forEach(el => {
-    el.addEventListener('click', () => openTaskModal(el.dataset.id, el.dataset.project));
+  grid.innerHTML = active.map(p => `
+    <div class="dash-proj-item" data-id="${p.id}">
+      <div class="dash-proj-icon" style="background:${p.color || '#6B7C5C'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </div>
+      <span class="dash-proj-name">${p.name}</span>
+    </div>
+  `).join('');
+  grid.querySelectorAll('.dash-proj-item').forEach(el => {
+    el.addEventListener('click', () => navigateTo('project', el.dataset.id));
   });
 }
 
-
-function renderTodayTasks() {
-  const list = $('today-list');
-  const today = new Date().toDateString();
-  const allTasks = getAllProjectTasks();
-  const todayTasks = allTasks.filter(t => {
-    if (isTaskDone(t)) return false;
-    if (!t.dueDate || new Date(t.dueDate).toDateString() !== today) return false;
-    return t.assigneeId === currentUser.uid || !t.assigneeId;
+function initDashboardTabs() {
+  const tabs = document.querySelectorAll('#view-dashboard .dash-tab');
+  tabs.forEach(tab => {
+    // remove old listeners by cloning
+    const fresh = tab.cloneNode(true);
+    tab.parentNode.replaceChild(fresh, tab);
   });
-  if (!todayTasks.length) {
-    list.innerHTML = '<div class="empty-state"><p>Brak zadań na dziś</p></div>';
-    return;
-  }
-  list.innerHTML = todayTasks.map(t => taskFeedItem(t)).join('');
-  list.querySelectorAll('.task-feed-item').forEach(el => {
-    el.addEventListener('click', () => openTaskModal(el.dataset.id, el.dataset.project));
+  document.querySelectorAll('#view-dashboard .dash-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#view-dashboard .dash-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#view-dashboard .dash-tab-panel').forEach(p => p.classList.add('hidden'));
+      tab.classList.add('active');
+      $('dash-tab-' + tab.dataset.tab)?.classList.remove('hidden');
+    });
   });
 }
+
+function renderUpcomingTasks() { renderDashboardTasks(); }
+function renderTodayTasks() { /* renderDashboardTasks covers today's tasks */ }
 
 function taskFeedItem(t) {
   const overdue = isOverdue(t.dueDate);
@@ -667,7 +730,9 @@ function taskFeedItem(t) {
   const proj = projects[t.projectId];
   return `
     <div class="task-feed-item ${overdue ? 'overdue' : ''} ${doneTask ? 'done' : ''}" data-id="${t.id}" data-project="${t.projectId}">
-      <div class="priority-dot ${t.priority || 'medium'}"></div>
+      <button class="feed-check-btn ${doneTask ? 'checked' : ''}" data-id="${t.id}" data-project="${t.projectId}" title="${doneTask ? 'Przywróć zadanie' : 'Oznacz jako zakończone'}">
+        ${doneTask ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
+      </button>
       <span class="task-feed-title">${t.title}</span>
       ${proj ? `<span class="task-feed-project">${proj.name}</span>` : ''}
       ${t.dueDate ? `<span class="task-feed-due ${overdue ? 'overdue' : ''}">${formatDate(t.dueDate)}</span>` : ''}
@@ -691,9 +756,9 @@ function renderMiniCalendar() {
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const today = new Date().toDateString();
 
-  // Task dates
-  const allProjTasks = getAllProjectTasks();
-  const taskDates = new Set(allProjTasks.filter(t => t.dueDate).map(t => new Date(t.dueDate).toDateString()));
+  // Task dates - tylko zadania bieżącego użytkownika
+  const allMyTasks = getAllMyTasks();
+  const taskDates = new Set(allMyTasks.filter(t => t.dueDate).map(t => new Date(t.dueDate).toDateString()));
 
   for (let i = 0; i < startDay; i++) {
     html += `<div class="mini-cal-day other-month"></div>`;
@@ -776,11 +841,11 @@ function projectCard(p) {
         <div class="project-card-menu">
           <button class="btn-icon proj-menu-btn">⋯</button>
           <div class="project-dropdown hidden">
-            <button class="project-dropdown-item proj-edit-btn" data-id="${p.id}">✏️ Edytuj</button>
+            <button class="project-dropdown-item proj-edit-btn" data-id="${p.id}">Edytuj</button>
             ${p.archived
-              ? `<button class="project-dropdown-item proj-restore-btn" data-id="${p.id}">♻️ Przywróć</button>`
-              : `<button class="project-dropdown-item proj-archive-btn" data-id="${p.id}">📦 Archiwizuj</button>`}
-            <button class="project-dropdown-item danger proj-delete-btn" data-id="${p.id}">🗑 Usuń</button>
+              ? `<button class="project-dropdown-item proj-restore-btn" data-id="${p.id}">Przywróć</button>`
+              : `<button class="project-dropdown-item proj-archive-btn" data-id="${p.id}">Archiwizuj</button>`}
+            <button class="project-dropdown-item danger proj-delete-btn" data-id="${p.id}">Usuń</button>
           </div>
         </div>
       </div>
@@ -1434,6 +1499,11 @@ async function submitComment() {
 
   await updateTask(taskId, { comments }, { action: 'Dodano komentarz' });
 
+  // Powiadomienia do skrzynki dla oznaczonych użytkowników
+  if (text) {
+    await sendInboxNotifications(taskId, task?.title || 'Zadanie', task?.projectId || currentProjectId, text);
+  }
+
   // Reset
   input.innerText = '';
   commentPendingImages = [];
@@ -1542,7 +1612,7 @@ function renderFullCalendar() {
   const y = fullCalDate.getFullYear(), m = fullCalDate.getMonth();
   $('cal-title').textContent = fullCalDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
 
-  const myTasks = getAllProjectTasks();
+  const myTasks = getAllMyTasks();
   renderCalendarGrid('full-calendar', y, m, myTasks, true);
 }
 
@@ -1602,6 +1672,7 @@ function setActiveProjectTab(activeId) {
 function setProjectView(view) {
   currentProjectView = view;
   setActiveProjectTab(view === 'list' ? 'project-view-list-btn' : 'project-view-kanban-btn');
+  $('project-chat-view').classList.add('hidden');
   if (view === 'list') {
     $('kanban-board').classList.add('hidden');
     $('project-list-view').classList.remove('hidden');
@@ -1616,6 +1687,11 @@ function renderProjectList(projectId) {
   const container = $('project-list-container');
   const viewEl = $('project-list-view');
   if (!container || !viewEl) return;
+
+  // Zapamiętaj pozycję scrolla przed re-renderem
+  const scrollWrap = container.querySelector('.list-table-wrap');
+  const savedScrollTop = scrollWrap ? scrollWrap.scrollTop : 0;
+  const savedScrollLeft = scrollWrap ? scrollWrap.scrollLeft : 0;
 
   const proj = projects[projectId];
   if (!proj) { container.innerHTML = ''; return; }
@@ -1759,6 +1835,13 @@ function renderProjectList(projectId) {
 
   // ---- Event bindings ----
   bindListTableInteractions(container, projectId, listCols);
+
+  // Przywróć pozycję scrolla po re-renderze
+  const newScrollWrap = container.querySelector('.list-table-wrap');
+  if (newScrollWrap) {
+    newScrollWrap.scrollTop = savedScrollTop;
+    newScrollWrap.scrollLeft = savedScrollLeft;
+  }
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
@@ -1890,10 +1973,7 @@ function projectListRow(t, col, sectionColId, listCols) {
       case 'title':
         return `<td>
           <div class="list-title">${t.title || '(bez tytułu)'}</div>
-          <div style="margin-top:.2rem;display:flex;gap:.35rem;flex-wrap:wrap">
-            ${col ? `<span class="list-pill" title="Kolumna">${col.name}</span>` : ''}
-            ${t.status === 'done' ? `<span class="list-pill" title="Status">Zakończone</span>` : ''}
-          </div>
+
         </td>`;
       case 'assignee':
         return `<td style="font-size:.75rem;color:var(--text-muted);">${t.assigneeName || '—'}</td>`;
@@ -1929,46 +2009,170 @@ function renderProjectCalendar(projectId) {
 }
 
 // ============================================================
-// GANTT
+// OŚ CZASU (GANTT)
 // ============================================================
 function renderGantt(projectId) {
-  const projTasks = Object.values(tasks[projectId] || {}).filter(t => t.dueDate);
+  const proj = projects[projectId];
+  const allTasks = Object.values(tasks[projectId] || {});
+  const projTasks = allTasks.filter(t => t.dueDate);
+
   if (!projTasks.length) {
-    $('gantt-container').innerHTML = '<div class="empty-state"><p>Brak zadań z terminem</p></div>';
+    $('gantt-container').innerHTML = '<div class="empty-state"><p>Brak zadań z terminem — dodaj daty do zadań, aby zobaczyć oś czasu.</p></div>';
     return;
   }
 
+  // --- Date range ---
+  const today = new Date(); today.setHours(0,0,0,0);
   projTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-  const earliest = new Date(projTasks[0].dueDate);
-  const latest = new Date(projTasks[projTasks.length - 1].dueDate);
-  const totalDays = Math.max(Math.ceil((latest - earliest) / 86400000) + 7, 30);
+  let rangeStart = new Date(Math.min(today.getTime(), new Date(projTasks[0].dueDate).getTime()));
+  let rangeEnd   = new Date(projTasks[projTasks.length - 1].dueDate);
+  // Pad: start on Monday, end on Sunday + buffer
+  rangeStart.setDate(rangeStart.getDate() - rangeStart.getDay() + (rangeStart.getDay() === 0 ? -6 : 1));
+  rangeEnd.setDate(rangeEnd.getDate() + 14);
+  const totalDays = Math.ceil((rangeEnd - rangeStart) / 86400000);
 
-  let headerCols = '';
-  for (let i = 0; i <= totalDays; i++) {
-    const d = new Date(earliest.getTime() + i * 86400000);
-    headerCols += `<div class="gantt-day-header">${d.getDate()}</div>`;
+  // --- Build week columns for header ---
+  const DAY_W = 36; // px per day
+  const TASK_COL_W = 200; // px left panel
+
+  // Group tasks by kanban column (ordered)
+  const projCols = [...(proj.columns || [])].sort((a, b) => (a.order||0) - (b.order||0));
+  const colMap = {};
+  projCols.forEach(c => { colMap[c.id] = c.name; });
+  const tempSections = {};
+  projTasks.forEach(t => {
+    const sec = colMap[t.columnId] || 'Pozostałe';
+    if (!tempSections[sec]) tempSections[sec] = [];
+    tempSections[sec].push(t);
+  });
+  // Build sections in column order
+  const sections = {};
+  projCols.forEach(c => {
+    if (tempSections[c.name]) sections[c.name] = tempSections[c.name];
+  });
+  if (tempSections['Pozostałe']) sections['Pozostałe'] = tempSections['Pozostałe'];
+
+  // --- Header: months + weeks ---
+  let monthHeader = '';
+  let weekHeader = '';
+  // Month spans
+  {
+    let cur = new Date(rangeStart);
+    while (cur < rangeEnd) {
+      const monthStart = new Date(cur);
+      const monthName = cur.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
+      // count days in this month within range
+      let days = 0;
+      const nextMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+      const endOfMonth = nextMonth < rangeEnd ? nextMonth : rangeEnd;
+      days = Math.ceil((endOfMonth - cur) / 86400000);
+      monthHeader += `<div class="gt-month-cell" style="width:${days * DAY_W}px">${monthName}</div>`;
+      cur = nextMonth;
+    }
+  }
+  // Week spans
+  {
+    let cur = new Date(rangeStart);
+    while (cur < rangeEnd) {
+      const weekStart = new Date(cur);
+      // days until Sunday (or range end)
+      const daysLeft = Math.ceil((rangeEnd - cur) / 86400000);
+      const daysInWeek = Math.min(7, daysLeft);
+      const label = weekStart.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+      const isCurrentWeek = today >= cur && today < new Date(cur.getTime() + 7 * 86400000);
+      weekHeader += `<div class="gt-week-cell${isCurrentWeek ? ' current-week' : ''}" style="width:${daysInWeek * DAY_W}px">${label}</div>`;
+      cur.setDate(cur.getDate() + 7);
+    }
   }
 
-  let rows = projTasks.map(t => {
-    const start = Math.floor((new Date(t.dueDate) - earliest) / 86400000);
-    const left = (start / totalDays * 100).toFixed(2);
-    const over = isOverdue(t.dueDate);
-    return `
-      <div class="gantt-row">
-        <div class="gantt-task-name" title="${t.title}">${t.title}</div>
-        <div class="gantt-bar-area">
-          <div class="gantt-bar ${over ? 'overdue' : t.priority}" style="left:${left}%;width:${Math.max(3, 100 / totalDays).toFixed(2)}%"></div>
-        </div>
-      </div>`;
-  }).join('');
+  // Today line position
+  const todayOffset = Math.floor((today - rangeStart) / 86400000);
+  const todayLeft = todayOffset * DAY_W;
+
+  // --- Build day grid background columns (weekends) ---
+  let gridBg = '';
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(rangeStart.getTime() + i * 86400000);
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) {
+      gridBg += `<div class="gt-weekend-col" style="left:${i * DAY_W}px;width:${DAY_W}px"></div>`;
+    }
+  }
+
+  // --- Build rows ---
+  const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', low: '#10B981', normal: 'var(--accent)' };
+  let rows = '';
+  Object.entries(sections).forEach(([secName, secTasks]) => {
+    rows += `<div class="gt-section-row"><div class="gt-section-label">${secName}</div><div class="gt-section-timeline" style="width:${totalDays * DAY_W}px"></div></div>`;
+    secTasks.forEach(t => {
+      const due = new Date(t.dueDate); due.setHours(0,0,0,0);
+      // Use startDate if available, else same as due (milestone / 1-day)
+      const startDate = t.startDate ? new Date(t.startDate) : new Date(due.getTime() - 86400000);
+      startDate.setHours(0,0,0,0);
+      const barStart = Math.max(0, Math.floor((startDate - rangeStart) / 86400000));
+      const barEnd   = Math.max(barStart + 1, Math.ceil((due - rangeStart) / 86400000) + 1);
+      const barW = Math.max(DAY_W, (barEnd - barStart) * DAY_W);
+      const barLeft = barStart * DAY_W;
+      const over = isOverdue(t.dueDate) && t.status !== 'done';
+      const color = over ? '#EF4444' : (PRIORITY_COLORS[t.priority] || 'var(--accent)');
+      const statusDone = t.status === 'done';
+
+      rows += `
+        <div class="gt-row">
+          <div class="gt-task-label" title="${t.title}">${statusDone ? '✓ ' : ''}${t.title}</div>
+          <div class="gt-timeline-area" style="width:${totalDays * DAY_W}px;position:relative;">
+            <div class="gt-bar" style="left:${barLeft}px;width:${barW}px;background:${color};opacity:${statusDone ? 0.5 : 1};" title="${t.title}">
+              <span class="gt-bar-label">${t.title}</span>
+            </div>
+          </div>
+        </div>`;
+    });
+  });
 
   $('gantt-container').innerHTML = `
-    <div class="gantt-chart">
-      <div class="gantt-header">
-        <div class="gantt-task-col-header">Zadanie</div>
-        <div class="gantt-timeline-header">${headerCols}</div>
+    <div class="gt-wrap">
+      <div class="gt-header-row">
+        <div class="gt-corner" style="width:${TASK_COL_W}px"></div>
+        <div class="gt-header-timeline">
+          <div class="gt-month-row">${monthHeader}</div>
+          <div class="gt-week-row">${weekHeader}</div>
+        </div>
       </div>
-      ${rows}
+      <div class="gt-body">
+        <div class="gt-left-col" style="width:${TASK_COL_W}px">
+          ${Object.entries(sections).map(([secName, secTasks]) =>
+            `<div class="gt-section-left">${secName}</div>` +
+            secTasks.map(t => `<div class="gt-task-left" title="${t.title}">${t.status === 'done' ? '✓ ' : ''}${t.title}</div>`).join('')
+          ).join('')}
+        </div>
+        <div class="gt-right-col" style="overflow-x:auto;flex:1;position:relative;">
+          <div class="gt-grid" style="width:${totalDays * DAY_W}px;position:relative;">
+            ${gridBg}
+            ${today >= rangeStart && today < rangeEnd ? `<div class="gt-today-line" style="left:${todayLeft}px"></div>` : ''}
+            ${Object.entries(sections).map(([secName, secTasks]) =>
+              `<div class="gt-section-grid-row"></div>` +
+              secTasks.map(t => {
+                const due = new Date(t.dueDate); due.setHours(0,0,0,0);
+                const startDate = t.startDate ? new Date(t.startDate) : new Date(due.getTime() - 86400000);
+                startDate.setHours(0,0,0,0);
+                const barStart = Math.max(0, Math.floor((startDate - rangeStart) / 86400000));
+                const barEnd   = Math.max(barStart + 1, Math.ceil((due - rangeStart) / 86400000) + 1);
+                const barW = Math.max(DAY_W, (barEnd - barStart) * DAY_W);
+                const barLeft = barStart * DAY_W;
+                const over = isOverdue(t.dueDate) && t.status !== 'done';
+                const PRIORITY_COLORS2 = { high: '#EF4444', medium: '#F59E0B', low: '#10B981', normal: 'var(--accent)' };
+                const color = over ? '#EF4444' : (PRIORITY_COLORS2[t.priority] || 'var(--accent)');
+                const statusDone = t.status === 'done';
+                return `<div class="gt-grid-row">
+                  <div class="gt-bar" style="left:${barLeft}px;width:${barW}px;background:${color};opacity:${statusDone ? 0.5 : 1};" title="${t.title}">
+                    <span class="gt-bar-label">${t.title}</span>
+                  </div>
+                </div>`;
+              }).join('')
+            ).join('')}
+          </div>
+        </div>
+      </div>
     </div>`;
 }
 
@@ -2101,7 +2305,7 @@ function openNote(noteId, saveScroll = true) {
     <div class="note-editor-content">
       <div class="note-editor-header">
         <input class="note-title-editable" id="note-title-edit" value="${note.title || ''}" placeholder="Tytuł notatki..." />
-        <button class="btn-danger small" id="delete-note-btn">🗑 Usuń</button>
+        <button class="btn-danger small" id="delete-note-btn">Usuń</button>
       </div>
       <textarea class="note-body-editable" id="note-body-edit" placeholder="Zacznij pisać...">${note.body || ''}</textarea>
       <div class="note-editor-footer">
@@ -2145,6 +2349,309 @@ async function createNote(title) {
 }
 
 // ============================================================
+// INBOX
+// ============================================================
+function subscribeToInbox() {
+  if (!currentUser) return;
+  if (inboxUnsubscribe) { inboxUnsubscribe(); inboxUnsubscribe = null; }
+
+  const q = query(
+    collection(db, 'inbox'),
+    where('toUid', '==', currentUser.uid)
+  );
+
+  inboxUnsubscribe = onSnapshot(q, snap => {
+    inboxItems = {};
+    snap.forEach(d => { inboxItems[d.id] = { id: d.id, ...d.data() }; });
+    updateInboxBadge();
+    if (document.querySelector('#view-inbox:not(.hidden)')) renderInbox();
+  });
+}
+
+function updateInboxBadge() {
+  const unread = Object.values(inboxItems).filter(i => !i.read).length;
+  const badge = document.getElementById('inbox-badge');
+  const countBadge = document.getElementById('inbox-count-badge');
+  const tabBadge = document.getElementById('inbox-tab-badge');
+
+  if (badge) {
+    badge.textContent = unread;
+    badge.classList.toggle('hidden', unread === 0);
+  }
+  if (countBadge) {
+    countBadge.textContent = unread;
+    countBadge.classList.toggle('hidden', unread === 0);
+  }
+  if (tabBadge) {
+    tabBadge.classList.toggle('hidden', unread === 0);
+  }
+}
+
+async function markInboxItemRead(docId) {
+  try {
+    await updateDoc(doc(db, 'inbox', docId), { read: true });
+  } catch(e) {}
+}
+
+async function markAllInboxRead() {
+  const unread = Object.values(inboxItems).filter(i => !i.read);
+  await Promise.all(unread.map(i => updateDoc(doc(db, 'inbox', i.id), { read: true })));
+  showToast('Wszystkie przeczytane', 'success');
+}
+
+async function sendInboxNotifications(taskId, taskTitle, projectId, commentText) {
+  const proj = projects[projectId];
+  if (!proj || !proj.members) return;
+
+  // Find all @Mentioned members in comment text
+  const mentionedUids = [];
+  for (const member of proj.members) {
+    if (member.uid === currentUser.uid) continue; // don't notify yourself
+    // Check if member name appears as @mention (full name or first name)
+    const firstName = member.name.split(' ')[0];
+    if (
+      commentText.includes('@' + member.name) ||
+      commentText.includes('@' + firstName)
+    ) {
+      mentionedUids.push(member.uid);
+    }
+  }
+
+  if (!mentionedUids.length) return;
+
+  const projName = proj.name || '';
+  await Promise.all(mentionedUids.map(uid =>
+    addDoc(collection(db, 'inbox'), {
+      toUid: uid,
+      fromUid: currentUser.uid,
+      fromName: currentUser.displayName || 'Użytkownik',
+      taskId,
+      taskTitle,
+      projectId,
+      projectName: projName,
+      commentText,
+      read: false,
+      createdAt: serverTimestamp()
+    })
+  ));
+}
+
+function renderInbox() {
+  const list = document.getElementById('inbox-list');
+  if (!list) return;
+
+  // Mark all visible as read when opening
+  const items = Object.values(inboxItems).sort((a, b) => {
+    const ta = a.createdAt?.seconds || 0;
+    const tb = b.createdAt?.seconds || 0;
+    return tb - ta;
+  });
+
+  if (!items.length) {
+    list.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <p>Skrzynka jest pusta 🎉</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    const time = item.createdAt ? formatDateTime(item.createdAt) : '';
+    const proj = projects[item.projectId];
+    const projColor = proj?.color || '#6B7C5C';
+    const mentionHighlight = (item.commentText || '').replace(
+      /@(\S+)/g,
+      '<span class="comment-mention">@$1</span>'
+    );
+    const toggleBtn = item.read
+      ? `<button class="inbox-toggle-read-btn" data-id="${item.id}" data-action="unread" title="Oznacz jako nieprzeczytane">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+           Nieprzeczytane
+         </button>`
+      : `<button class="inbox-toggle-read-btn read" data-id="${item.id}" data-action="read" title="Oznacz jako przeczytane">
+           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+           Przeczytane
+         </button>`;
+    return `
+      <div class="inbox-item ${item.read ? '' : 'unread'}" data-id="${item.id}" data-task-id="${item.taskId}" data-project-id="${item.projectId}">
+        <div class="inbox-item-body">
+          <div class="inbox-item-header">
+            <span class="inbox-item-author">${item.fromName}</span>
+            <span class="inbox-item-meta">wspomniał(a) Cię w zadaniu <strong>${item.taskTitle || 'zadanie'}</strong></span>
+            <span class="inbox-item-time">${time}</span>
+          </div>
+          <div class="inbox-item-project">
+            <span class="inbox-proj-dot" style="background:${projColor}"></span>
+            ${item.projectName || ''}
+          </div>
+          <div class="inbox-item-comment">${mentionHighlight}</div>
+          <div class="inbox-item-actions">
+            ${toggleBtn}
+          </div>
+        </div>
+        ${!item.read ? '<div class="inbox-unread-dot"></div>' : ''}
+      </div>`;
+  }).join('');
+
+  // Toggle read/unread buttons — stop propagation so item click doesn't fire
+  list.querySelectorAll('.inbox-toggle-read-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const docId = btn.dataset.id;
+      const action = btn.dataset.action;
+      try {
+        await updateDoc(doc(db, 'inbox', docId), { read: action === 'read' });
+      } catch(err) {}
+    });
+  });
+
+  // Click item body → open task, mark read
+  list.querySelectorAll('.inbox-item').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      if (e.target.closest('.inbox-toggle-read-btn')) return;
+      const docId = el.dataset.id;
+      const taskId = el.dataset.taskId;
+      const projectId = el.dataset.projectId;
+
+      if (inboxItems[docId] && !inboxItems[docId].read) {
+        markInboxItemRead(docId);
+      }
+
+      if (taskId && projectId) {
+        navigateTo('project', projectId);
+        let attempts = 0;
+        const tryOpen = async () => {
+          const task = getTaskById(taskId);
+          if (task) {
+            await openTaskModal(taskId, projectId);
+          } else if (attempts++ < 20) {
+            setTimeout(tryOpen, 200);
+          }
+        };
+        tryOpen();
+      }
+    });
+  });
+
+  // Mark all read button
+  document.getElementById('inbox-mark-all-read-btn')?.addEventListener('click', markAllInboxRead);
+}
+
+// ============================================================
+// PROJECT CHAT (WIADOMOŚCI)
+// ============================================================
+function openProjectChat(projectId) {
+  // Unsubscribe from previous chat if different project
+  if (chatUnsubscribe && chatProjectId !== projectId) {
+    chatUnsubscribe();
+    chatUnsubscribe = null;
+  }
+  chatProjectId = projectId;
+
+  // Update avatar
+  const name = currentUser?.displayName || 'U';
+  const avatarEl = $('chat-input-avatar');
+  if (avatarEl) avatarEl.textContent = getInitials(name);
+
+  // Reset input
+  const input = $('chat-message-input');
+  if (input) { input.value = ''; input.style.height = 'auto'; }
+
+  // Subscribe to messages
+  if (!chatUnsubscribe) {
+    subscribeToChatMessages(projectId);
+  }
+}
+
+function subscribeToChatMessages(projectId) {
+  const q = query(
+    collection(db, 'projectMessages'),
+    where('projectId', '==', projectId),
+    orderBy('createdAt', 'asc')
+  );
+
+  chatUnsubscribe = onSnapshot(q, snap => {
+    const msgs = [];
+    snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+    renderChatMessages(msgs);
+  });
+}
+
+function renderChatMessages(messages) {
+  const container = $('chat-messages');
+  if (!container) return;
+
+  if (!messages.length) {
+    container.innerHTML = `<div class="chat-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <p>Brak wiadomości. Zacznij rozmowę!</p>
+    </div>`;
+    return;
+  }
+
+  // Group by date
+  let lastDate = null;
+  let html = '';
+  messages.forEach(msg => {
+    const isMe = msg.senderId === currentUser?.uid;
+    const ts = msg.createdAt?.toDate ? msg.createdAt.toDate() : new Date();
+    const dateStr = ts.toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' });
+    const timeStr = ts.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+
+    if (dateStr !== lastDate) {
+      html += `<div class="chat-date-divider"><span>${dateStr}</span></div>`;
+      lastDate = dateStr;
+    }
+
+    const initials = getInitials(msg.senderName || 'U');
+    html += `
+      <div class="chat-message-row ${isMe ? 'me' : 'other'}">
+        ${!isMe ? `<div class="chat-msg-avatar">${initials}</div>` : ''}
+        <div class="chat-msg-block">
+          ${!isMe ? `<div class="chat-msg-name">${msg.senderName || 'Użytkownik'}</div>` : ''}
+          <div class="chat-bubble ${isMe ? 'bubble-me' : 'bubble-other'}">
+            <span class="chat-bubble-text">${escapeHtml(msg.text)}</span>
+            <span class="chat-bubble-time">${timeStr}</span>
+          </div>
+        </div>
+        ${isMe ? `<div class="chat-msg-avatar me">${initials}</div>` : ''}
+      </div>`;
+  });
+
+  container.innerHTML = html;
+
+  // Scroll to bottom
+  const wrap = $('chat-messages-wrap');
+  if (wrap) setTimeout(() => { wrap.scrollTop = wrap.scrollHeight; }, 50);
+}
+
+function escapeHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+async function sendChatMessage() {
+  const input = $('chat-message-input');
+  const text = input?.value.trim();
+  if (!text || !chatProjectId || !currentUser) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  try {
+    await addDoc(collection(db, 'projectMessages'), {
+      projectId: chatProjectId,
+      senderId: currentUser.uid,
+      senderName: currentUser.displayName || 'Użytkownik',
+      text,
+      createdAt: serverTimestamp()
+    });
+  } catch(e) {
+    showToast('Nie udało się wysłać wiadomości', 'error');
+    input.value = text;
+  }
+}
+
+// ============================================================
 // MEMBERS
 // ============================================================
 async function addMember(projectId, email) {
@@ -2167,13 +2674,25 @@ async function addMember(projectId, email) {
 function renderMembersList(projectId) {
   const proj = projects[projectId];
   const list = $('members-list');
-  list.innerHTML = (proj?.members || []).map(m => `
+  const isOwner = proj?.ownerId === currentUser.uid;
+
+  list.innerHTML = (proj?.members || []).map(m => {
+    // Wszyscy widzą kto jest właścicielem
+    const roleLabel = m.role === 'owner' ? '👑 Właściciel' : 'Członek';
+
+    // Przycisk usunięcia widzi tylko właściciel, i nie może usunąć siebie
+    const removeBtn = isOwner && m.uid !== currentUser.uid
+      ? `<span class="member-remove" data-uid="${m.uid}">✕</span>`
+      : '';
+
+    return `
     <div class="member-item">
       <div class="user-avatar small">${getInitials(m.name)}</div>
       <div class="member-name">${m.name}</div>
-      <span class="member-role">${m.role === 'owner' ? '👑 Właściciel' : 'Członek'}</span>
-      ${m.uid !== currentUser.uid ? `<span class="member-remove" data-uid="${m.uid}">✕</span>` : ''}
-    </div>`).join('');
+      <span class="member-role">${roleLabel}</span>
+      ${removeBtn}
+    </div>`;
+  }).join('');
 
   list.querySelectorAll('.member-remove').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -2298,6 +2817,7 @@ function setupEventListeners() {
 
   // Projects
   $('create-project-btn').addEventListener('click', openCreateProjectModal);
+  $('dash-new-project-btn')?.addEventListener('click', openCreateProjectModal);
   $('new-project-btn').addEventListener('click', openCreateProjectModal);
   $('show-archived-btn').addEventListener('click', toggleArchivedView);
 
@@ -2451,6 +2971,7 @@ $('project-calendar-btn').addEventListener('click', () => {
     $('project-list-view').classList.add('hidden');
     $('project-dashboard').classList.add('hidden');
     $('gantt-view').classList.add('hidden');
+    $('project-chat-view').classList.add('hidden');
     $('project-calendar-view').classList.remove('hidden');
     setActiveProjectTab('project-calendar-btn');
     renderProjectCalendar(currentProjectId);
@@ -2460,6 +2981,7 @@ $('project-calendar-btn').addEventListener('click', () => {
     $('project-list-view').classList.add('hidden');
     $('project-dashboard').classList.add('hidden');
     $('project-calendar-view').classList.add('hidden');
+    $('project-chat-view').classList.add('hidden');
     $('gantt-view').classList.remove('hidden');
     setActiveProjectTab('project-gantt-btn');
     renderGantt(currentProjectId);
@@ -2473,6 +2995,16 @@ $('project-calendar-btn').addEventListener('click', () => {
     $('gantt-view').classList.add('hidden');
     $('project-dashboard').classList.remove('hidden');
     setProjectView(currentProjectView);
+  });
+  $('project-chat-btn').addEventListener('click', () => {
+    $('kanban-board').classList.add('hidden');
+    $('project-list-view').classList.add('hidden');
+    $('project-dashboard').classList.add('hidden');
+    $('project-calendar-view').classList.add('hidden');
+    $('gantt-view').classList.add('hidden');
+    $('project-chat-view').classList.remove('hidden');
+    setActiveProjectTab('project-chat-btn');
+    openProjectChat(currentProjectId);
   });
   $('proj-cal-prev').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() - 1); renderProjectCalendar(currentProjectId); });
   $('proj-cal-next').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() + 1); renderProjectCalendar(currentProjectId); });
@@ -2504,6 +3036,16 @@ $('project-calendar-btn').addEventListener('click', () => {
   $('stats-filter-project').addEventListener('change', renderStatistics);
   $('stats-filter-period').addEventListener('change', renderStatistics);
   $('stats-sort').addEventListener('change', renderStatistics);
+
+  // Chat send
+  $('chat-send-btn').addEventListener('click', sendChatMessage);
+  $('chat-message-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+  });
+  $('chat-message-input').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+  });
 
   // Confirm modal
   $('confirm-ok').addEventListener('click', () => {
@@ -2538,17 +3080,40 @@ $('project-calendar-btn').addEventListener('click', () => {
     });
   });
 
+  // Settings modal
+  $('open-settings-btn')?.addEventListener('click', () => {
+    // Populate user info in settings modal
+    if (currentUser) {
+      const name = currentUser.displayName || 'Użytkownik';
+      const email = currentUser.email || '';
+      const el = $('settings-user-name');
+      const el2 = $('settings-user-email');
+      const av = $('settings-user-avatar');
+      if (el) el.textContent = name;
+      if (el2) el2.textContent = email;
+      if (av) av.textContent = getInitials(name);
+    }
+    openModal('settings-modal');
+  });
+  $('close-settings-modal')?.addEventListener('click', () => closeModal('settings-modal'));
+  $('settings-modal-overlay')?.addEventListener('click', () => closeModal('settings-modal'));
+  $('settings-logout-btn')?.addEventListener('click', () => {
+    closeModal('settings-modal');
+    logout();
+  });
+  $('open-change-pw-btn')?.addEventListener('click', () => {
+    closeModal('settings-modal');
+    $('new-password-input').value = '';
+    $('confirm-password-input').value = '';
+    openModal('change-password-modal');
+  });
+
   // Change password
   $('close-change-pw-modal').addEventListener('click', () => closeModal('change-password-modal'));
   $('cancel-change-pw').addEventListener('click', () => closeModal('change-password-modal'));
   $('save-new-password-btn').addEventListener('click', changePassword);
 
-  // User info click - show change password
-  $('user-info-sidebar').addEventListener('click', () => {
-    $('new-password-input').value = '';
-    $('confirm-password-input').value = '';
-    openModal('change-password-modal');
-  });
+  // User info click - REMOVED (no longer opens modal directly)
 }
 
 // ============================================================
@@ -2571,6 +3136,7 @@ async function initApp() {
       showApp();
       subscribeToProjects();
       subscribeToNotes();
+      subscribeToInbox();
       startClock();
       await loadCollapsedSections();
       await loadListColumnConfig();
