@@ -997,7 +997,7 @@ tr:hover td { background:var(--bg-alt); }
 
 .section-collapse-btn { opacity:.5; }
 .section-collapse-btn:hover { opacity:1; color:var(--accent) !important; }
-.list-title { font-weight:700; font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
+.list-title { font-weight:400; font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
 .list-pill { display:inline-flex; align-items:center; gap:.25rem; font-size:.65rem; padding:.1rem .4rem; border-radius:999px; background:var(--bg-alt); color:var(--text-muted); white-space:nowrap; font-weight:600; }
 .list-pill.high { background:var(--tag-red-bg); color:var(--tag-red); }
 .list-pill.medium { background:var(--tag-yellow-bg); color:var(--tag-yellow); }
@@ -2196,7 +2196,7 @@ body {
 }
 
 .list-title {
-  font-weight: 700;
+  font-weight: 400;
   font-size: .82rem;
   white-space: nowrap;
   overflow: hidden;
@@ -2208,18 +2208,105 @@ body {
 
 /* Assignee avatar in table */
 .list-assignee-avatar {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: var(--accent);
   color: white;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: .58rem;
+  font-size: .6rem;
   font-weight: 700;
+  flex-shrink: 0;
+  transition: transform .15s, box-shadow .15s;
 }
-[data-theme="dark"] .list-assignee-avatar { color: #1C1C1E; }
+.list-assignee-avatar:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.list-assignee-avatar.list-assignee-empty {
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  border: 1.5px dashed var(--border);
+}
+.list-assignee-cell {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+[data-theme="dark"] .list-assignee-avatar { color: inherit; }
+
+/* Inline editable title */
+.list-inline-title {
+  cursor: default;
+}
+.list-inline-title:hover {
+  text-decoration: underline dotted;
+}
+.list-inline-title.list-title-editing {
+  outline: 2px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 4px;
+  background: var(--surface);
+  cursor: text;
+  min-width: 60px;
+}
+
+/* Inline priority clickable */
+.list-inline-priority {
+  cursor: pointer;
+  transition: opacity .15s, transform .15s;
+}
+.list-inline-priority:hover { opacity: .8; transform: scale(1.05); }
+
+/* Inline due date clickable */
+td[data-field="due"] {
+  cursor: pointer;
+}
+td[data-field="due"]:hover .list-inline-due {
+  text-decoration: underline dotted;
+}
+.list-field-empty { color: var(--text-muted); }
+
+/* Inline dropdown (assignee, priority, due) */
+.list-inline-dropdown {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  z-index: 9999;
+  min-width: 160px;
+  overflow: hidden;
+  animation: dropdownIn .12s ease;
+}
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-4px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.list-inline-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .4rem .65rem;
+  font-size: .78rem;
+  cursor: pointer;
+  color: var(--text);
+  transition: background .1s;
+}
+.list-inline-dropdown-item:hover { background: var(--bg-hover); }
+
+.list-inline-datepicker .list-date-input {
+  display: block;
+  width: calc(100% - 1rem);
+  margin: .2rem .5rem;
+  padding: .3rem .4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-alt);
+  color: var(--text);
+  font-size: .78rem;
+}
 
 /* Due date cell */
 .list-due-date {
@@ -2253,6 +2340,7 @@ body {
 /* ---------- KANBAN tweaks ---------- */
 .kanban-board {
   padding: 1rem 1.25rem;
+
 }
 
 .kanban-column {
@@ -2912,3 +3000,166 @@ body {
   }
   .chat-msg-block { max-width: 80%; }
 }
+
+/* ============================================================
+   LIST VIEW - INLINE EDIT & ASANA-STYLE IMPROVEMENTS
+   ============================================================ */
+
+/* Title inline edit */
+.list-title-wrap { display: flex; align-items: center; gap: .4rem; }
+.list-inline-title {
+  font-weight: 500;
+  font-size: .82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  border-radius: 4px;
+  padding: .1rem .25rem;
+  transition: background .15s;
+}
+.list-inline-title:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.list-title-input {
+  font-size: .82rem;
+  font-weight: 500;
+  padding: .15rem .35rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  min-width: 120px;
+}
+.list-title-input.hidden, .list-due-input.hidden, .list-due-display.hidden, .list-inline-title.hidden { display: none !important; }
+
+/* Avatar circle – Asana style */
+.list-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .62rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.list-avatar:hover { transform: scale(1.12); box-shadow: 0 0 0 2px var(--accent); }
+.list-avatar-empty {
+  background: transparent !important;
+  border: 1.5px dashed var(--border);
+  color: var(--text-muted);
+  opacity: .6;
+}
+.list-avatar-empty:hover { opacity: 1; border-color: var(--accent); }
+
+/* Assignee cell layout */
+.list-assignee-cell {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  cursor: pointer;
+  position: relative;
+}
+.list-assignee-name {
+  font-size: .75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
+}
+
+/* Assignee dropdown */
+.list-assignee-dropdown {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  min-width: 180px;
+  padding: .3rem;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.list-assignee-dropdown.hidden { display: none; }
+.list-assignee-option {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: .78rem;
+  color: var(--text);
+  transition: background .12s;
+}
+.list-assignee-option:hover { background: var(--bg-hover); }
+
+/* Due date cell */
+.list-due-cell {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: .75rem;
+  border-radius: 5px;
+  padding: .15rem .35rem;
+  transition: background .15s;
+}
+.list-due-cell:hover { background: var(--bg-hover); }
+.list-due-cell.overdue .list-due-display { color: #EF4444; font-weight: 600; }
+.list-due-input {
+  font-size: .75rem;
+  padding: .1rem .2rem;
+  border: 1.5px solid var(--accent);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Priority cell & dropdown */
+.list-priority-cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.list-pill-btn {
+  cursor: pointer;
+  transition: filter .15s, transform .15s;
+}
+.list-pill-btn:hover { filter: brightness(1.15); transform: scale(1.05); }
+.list-priority-dropdown {
+  position: fixed;
+  z-index: 9999;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  padding: .3rem;
+  min-width: 110px;
+}
+.list-priority-dropdown.hidden { display: none; }
+.list-priority-option {
+  padding: .3rem .4rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background .12s;
+}
+.list-priority-option:hover { background: var(--bg-hover); }
+.list-priority-option.active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Row hover – subtle left accent */
+.list-row { border-left: 3px solid transparent; transition: background .12s, border-color .12s; }
+.list-row:hover { border-left-color: var(--accent); }
+
+/* "Add task" row appearance tweak */
+.list-add-row td { font-size: .78rem; color: var(--text-muted); }
+.list-add-row:hover td { color: var(--accent); }

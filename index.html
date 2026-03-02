@@ -815,11 +815,38 @@
 
       <!-- User summary -->
       <div class="settings-user-header">
-        <div class="user-avatar settings-avatar" id="settings-user-avatar">U</div>
+        <div class="user-avatar settings-avatar" id="settings-user-avatar" style="position:relative;cursor:pointer;" title="Zmień zdjęcie profilowe" id="settings-avatar-wrap">
+          <img id="settings-avatar-img" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+          <span id="settings-avatar-initials">U</span>
+          <div class="settings-avatar-overlay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" />
+        </div>
         <div class="settings-user-info">
           <div class="settings-user-name" id="settings-user-name">Użytkownik</div>
-          <div class="settings-user-email" id="settings-user-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="84e1e9e5ede8c4e1fce5e9f4e8e1aae7ebe9">[email&#160;protected]</a></div>
+          <div class="settings-user-email" id="settings-user-email"></div>
         </div>
+      </div>
+
+      <div class="settings-divider"></div>
+
+      <!-- Profile section -->
+      <div class="settings-section-label">Profil</div>
+      <div class="settings-profile-edit" style="padding:.75rem 1.25rem;">
+        <div class="form-group" style="margin-bottom:.6rem;">
+          <label style="font-size:.75rem;color:var(--text-light);margin-bottom:.3rem;display:block;">Imię</label>
+          <input type="text" id="settings-firstname-input" class="form-input" placeholder="Jan" style="width:100%;font-size:.85rem;" />
+        </div>
+        <div class="form-group" style="margin-bottom:.75rem;">
+          <label style="font-size:.75rem;color:var(--text-light);margin-bottom:.3rem;display:block;">Nazwisko</label>
+          <div style="display:flex;gap:.5rem;">
+            <input type="text" id="settings-lastname-input" class="form-input" placeholder="Kowalski" style="flex:1;font-size:.85rem;" />
+            <button class="btn-primary" id="save-profile-btn" style="font-size:.8rem;padding:.4rem .85rem;white-space:nowrap;">Zapisz</button>
+          </div>
+        </div>
+        <!-- hidden compat input, not shown -->
+        <input type="hidden" id="settings-displayname-input" />
       </div>
 
       <div class="settings-divider"></div>
@@ -1112,6 +1139,40 @@
         <button class="btn-secondary" id="add-task-confirm-cancel">Anuluj</button>
         <button class="btn-primary" id="add-task-confirm-ok">Dodaj</button>
       </div>
+  </div>
+</div>
+
+<!-- Avatar Crop Modal -->
+<div id="avatar-crop-modal" class="modal hidden">
+  <div class="modal-overlay" id="avatar-crop-overlay"></div>
+  <div class="modal-panel avatar-crop-panel">
+    <div class="modal-header">
+      <h2>Dopasuj zdjęcie profilowe</h2>
+      <button class="btn-icon" id="avatar-crop-close">✕</button>
+    </div>
+    <div class="avatar-crop-body">
+      <div class="avatar-crop-stage-wrap">
+        <div class="avatar-crop-stage" id="avatar-crop-stage">
+          <img id="avatar-crop-img" src="" alt="" draggable="false" />
+          <div class="avatar-crop-circle-mask"></div>
+          <div class="avatar-crop-circle-outline"></div>
+        </div>
+      </div>
+      <div class="avatar-crop-controls">
+        <label class="avatar-crop-zoom-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </label>
+        <input type="range" id="avatar-crop-zoom" min="1" max="3" step="0.01" value="1" class="avatar-crop-range" />
+        <label class="avatar-crop-zoom-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        </label>
+      </div>
+      <p class="avatar-crop-hint">Przeciągnij zdjęcie, aby ustawić kadr</p>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:.5rem;justify-content:flex-end;padding:.75rem 1.25rem;">
+      <button class="btn-secondary" id="avatar-crop-cancel">Anuluj</button>
+      <button class="btn-primary" id="avatar-crop-save">Zapisz zdjęcie</button>
+    </div>
   </div>
 </div>
 

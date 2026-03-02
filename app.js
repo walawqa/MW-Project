@@ -367,10 +367,43 @@ function updateUserUI() {
   if (!currentUser) return;
   const name = currentUser.displayName || 'Użytkownik';
   const email = currentUser.email || '';
+  const photoURL = currentUser.photoURL || '';
   $('user-name-sidebar').textContent = name;
   $('user-email-sidebar').textContent = email;
-  $('user-avatar-sidebar').textContent = getInitials(name);
-  $('comment-avatar').textContent = getInitials(name);
+  const sidebarAvatar = $('user-avatar-sidebar');
+  if (photoURL) {
+    sidebarAvatar.style.backgroundImage = `url(${photoURL})`;
+    sidebarAvatar.style.backgroundSize = 'cover';
+    sidebarAvatar.style.backgroundPosition = 'center';
+    sidebarAvatar.textContent = '';
+  } else {
+    sidebarAvatar.style.backgroundImage = '';
+    sidebarAvatar.textContent = getInitials(name);
+  }
+  const commentAvatar = $('comment-avatar');
+  if (commentAvatar) {
+    if (photoURL) {
+      commentAvatar.style.backgroundImage = `url(${photoURL})`;
+      commentAvatar.style.backgroundSize = 'cover';
+      commentAvatar.style.backgroundPosition = 'center';
+      commentAvatar.textContent = '';
+    } else {
+      commentAvatar.style.backgroundImage = '';
+      commentAvatar.textContent = getInitials(name);
+    }
+  }
+  const dashAvatar = $('dash-user-avatar');
+  if (dashAvatar) {
+    if (photoURL) {
+      dashAvatar.style.backgroundImage = `url(${photoURL})`;
+      dashAvatar.style.backgroundSize = 'cover';
+      dashAvatar.style.backgroundPosition = 'center';
+      dashAvatar.textContent = '';
+    } else {
+      dashAvatar.style.backgroundImage = '';
+      dashAvatar.textContent = getInitials(name);
+    }
+  }
 }
 
 // ============================================================
@@ -494,12 +527,31 @@ async function updateProject(projectId, data) {
 }
 
 async function deleteProject(projectId) {
-  // Delete all tasks
-  const tSnap = await getDocs(query(collection(db, 'tasks'), where('projectId', '==', projectId)));
-  for (const td of tSnap.docs) await deleteDoc(doc(db, 'tasks', td.id));
-  await deleteDoc(doc(db, 'projects', projectId));
-  showToast('Projekt usunięty', 'success');
-  navigateTo('projects');
+  try {
+    // Verify ownership client-side first for a clear error message
+    const proj = projects[projectId];
+    const isOwner =
+      proj?.ownerId === currentUser.uid ||
+      (proj?.members || []).some(m => m.uid === currentUser.uid && m.role === 'owner');
+    if (!isOwner) { showToast('Brak uprawnień – tylko właściciel może usunąć projekt', 'error'); return; }
+
+    // Delete all tasks
+    const tSnap = await getDocs(query(collection(db, 'tasks'), where('projectId', '==', projectId)));
+    for (const td of tSnap.docs) await deleteDoc(doc(db, 'tasks', td.id));
+    // Delete project messages
+    try {
+      const msgSnap = await getDocs(query(collection(db, 'projectMessages'), where('projectId', '==', projectId)));
+      for (const md of msgSnap.docs) await deleteDoc(doc(db, 'projectMessages', md.id));
+    } catch(e) {}
+    // Delete the project itself
+    await deleteDoc(doc(db, 'projects', projectId));
+    showToast('Projekt usunięty', 'success');
+    if (currentProjectId === projectId) currentProjectId = null;
+    navigateTo('projects');
+  } catch(e) {
+    console.error('deleteProject error:', e);
+    showToast('Nie udało się usunąć projektu: ' + (e.message || e.code || e), 'error');
+  }
 }
 
 async function archiveProject(projectId) {
@@ -1862,6 +1914,15 @@ function bindListTableInteractions(container, projectId, listCols) {
   container.querySelectorAll('.list-row').forEach(tr => {
     tr.addEventListener('click', (e) => {
       if (e.target.classList?.contains('list-checkbox') || e.target.tagName === 'INPUT') return;
+      if (e.target.closest('.list-priority-cell')) return;
+      if (e.target.closest('.list-assignee-cell')) return;
+      if (e.target.closest('.list-due-cell')) return;
+      // For title span: delay to distinguish single vs double click
+      if (e.target.closest('.list-inline-title')) {
+        clearTimeout(tr._clickTimer);
+        tr._clickTimer = setTimeout(() => openTaskModal(tr.dataset.id, projectId), 220);
+        return;
+      }
       openTaskModal(tr.dataset.id, projectId);
     });
   });
@@ -1878,7 +1939,144 @@ function bindListTableInteractions(container, projectId, listCols) {
     });
   });
 
-  // Column visibility dropdown
+  // ---- Inline: title double-click edit ----
+  container.querySelectorAll('.list-inline-title').forEach(span => {
+    span.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      // Cancel pending single-click timer on the parent row
+      const tr = span.closest('.list-row');
+      if (tr && tr._clickTimer) { clearTimeout(tr._clickTimer); tr._clickTimer = null; }
+      const input = span.closest('.list-title-wrap').querySelector('.list-title-input');
+      span.classList.add('hidden');
+      input.classList.remove('hidden');
+      input.focus();
+      input.select();
+    });
+  });
+  container.querySelectorAll('.list-title-input').forEach(input => {
+    const saveTitle = async () => {
+      const span = input.closest('.list-title-wrap').querySelector('.list-inline-title');
+      const newVal = input.value.trim();
+      if (newVal && newVal !== span.textContent) {
+        try {
+          await updateTask(input.dataset.id, { title: newVal }, { action: `Zmieniono nazwę na "${newVal}"` });
+        } catch(err) { showToast('Nie udało się zmienić nazwy', 'error'); }
+      }
+      input.classList.add('hidden');
+      span.classList.remove('hidden');
+    };
+    input.addEventListener('blur', saveTitle);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur();
+      if (e.key === 'Escape') { input.value = input.dataset.originalValue || ''; input.blur(); }
+    });
+    input.addEventListener('click', e => e.stopPropagation());
+  });
+
+  // ---- Inline: due date click ----
+  container.querySelectorAll('.list-due-cell').forEach(cell => {
+    cell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const display = cell.querySelector('.list-due-display');
+      const input = cell.querySelector('.list-due-input');
+      display.classList.add('hidden');
+      input.classList.remove('hidden');
+      input.focus();
+      input.showPicker?.();
+    });
+    const input = cell.querySelector('.list-due-input');
+    if (!input) return;
+    const saveDate = async () => {
+      const display = cell.querySelector('.list-due-display');
+      const newVal = input.value;
+      try {
+        await updateTask(input.dataset.id, { dueDate: newVal || null }, { action: newVal ? `Ustawiono termin: ${newVal}` : 'Usunięto termin' });
+      } catch(err) { showToast('Nie udało się zmienić terminu', 'error'); }
+      input.classList.add('hidden');
+      display.classList.remove('hidden');
+    };
+    input.addEventListener('blur', saveDate);
+    input.addEventListener('change', () => input.blur());
+    input.addEventListener('click', e => e.stopPropagation());
+  });
+
+  // ---- Inline: priority dropdown ----
+  container.querySelectorAll('.list-priority-cell').forEach(cell => {
+    const btn = cell.querySelector('.list-pill-btn');
+    const dropdown = cell.querySelector('.list-priority-dropdown');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Close others
+      container.querySelectorAll('.list-priority-dropdown').forEach(d => { if (d !== dropdown) d.classList.add('hidden'); });
+      container.querySelectorAll('.list-assignee-dropdown').forEach(d => d.classList.add('hidden'));
+      dropdown.classList.toggle('hidden');
+    });
+    dropdown.querySelectorAll('.list-priority-option').forEach(opt => {
+      opt.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const newPr = opt.dataset.val;
+        dropdown.classList.add('hidden');
+        try {
+          await updateTask(opt.dataset.id, { priority: newPr }, { action: `Zmieniono priorytet na "${newPr}"` });
+        } catch(err) { showToast('Nie udało się zmienić priorytetu', 'error'); }
+      });
+    });
+  });
+
+  // ---- Inline: assignee avatar click -> dropdown ----
+  container.querySelectorAll('.list-assignee-cell').forEach(cell => {
+    cell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Close other dropdowns
+      container.querySelectorAll('.list-priority-dropdown').forEach(d => d.classList.add('hidden'));
+      container.querySelectorAll('.list-assignee-dropdown').forEach(d => { if (!cell.contains(d)) d.classList.add('hidden'); });
+
+      let dropdown = cell.querySelector('.list-assignee-dropdown');
+      if (!dropdown) {
+        // Build dropdown from project members
+        const proj = projects[projectId];
+        const members = proj?.members || [];
+        dropdown = document.createElement('div');
+        dropdown.className = 'list-assignee-dropdown';
+        dropdown.innerHTML = `
+          <div class="list-assignee-option" data-uid="" data-name="">
+            <div class="list-avatar list-avatar-empty" style="width:22px;height:22px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="10" height="10"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+            <span>— Nieprzypisany —</span>
+          </div>
+          ${members.map(m => {
+            const avatarColors = ['#6B7C5C','#4A90D9','#E67E22','#9B59B6','#1ABC9C','#E74C3C','#F39C12','#2ECC71'];
+            let h = 0;
+            for (let i = 0; i < (m.name||'').length; i++) h = (m.name||'').charCodeAt(i) + ((h << 5) - h);
+            const color = avatarColors[Math.abs(h) % avatarColors.length];
+            return `<div class="list-assignee-option" data-uid="${m.uid}" data-name="${m.name}">
+              <div class="list-avatar" style="background:${color};width:22px;height:22px;">${getInitials(m.name)}</div>
+              <span>${m.name}</span>
+            </div>`;
+          }).join('')}
+        `;
+        cell.appendChild(dropdown);
+        dropdown.querySelectorAll('.list-assignee-option').forEach(opt => {
+          opt.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const uid = opt.dataset.uid;
+            const name = opt.dataset.name;
+            dropdown.classList.add('hidden');
+            try {
+              await updateTask(cell.dataset.id, { assigneeId: uid || null, assigneeName: name || null }, { action: uid ? `Przypisano do "${name}"` : 'Usunięto przypisanie' });
+            } catch(err) { showToast('Nie udało się zmienić osoby', 'error'); }
+          });
+        });
+      }
+      dropdown.classList.toggle('hidden');
+    });
+  });
+
+  // Close dropdowns on outside click
+  document.addEventListener('click', function closeInlineDropdowns() {
+    container.querySelectorAll('.list-priority-dropdown, .list-assignee-dropdown').forEach(d => d.classList.add('hidden'));
+  }, { once: true });
   const settingsBtn = $('list-col-settings-btn');
   const visDropdown = $('col-vis-dropdown');
   if (settingsBtn && visDropdown) {
@@ -1964,6 +2162,15 @@ function projectListRow(t, col, sectionColId, listCols) {
   const pr       = t.priority || 'medium';
   const prLabel  = getPriorityLabel(pr).replace(/^.. /, '');
 
+  // Avatar color based on name hash
+  const avatarColors = ['#6B7C5C','#4A90D9','#E67E22','#9B59B6','#1ABC9C','#E74C3C','#F39C12','#2ECC71'];
+  function nameToColor(name) {
+    if (!name) return '#6B7C5C';
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+    return avatarColors[Math.abs(h) % avatarColors.length];
+  }
+
   const cells = (listCols || getListColumns().filter(c => c.visible)).map(c => {
     switch(c.id) {
       case 'checkbox':
@@ -1972,17 +2179,52 @@ function projectListRow(t, col, sectionColId, listCols) {
         return `<td style="font-size:.73rem;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:0;">${t.desc ? t.desc.slice(0, 120) : '—'}</td>`;
       case 'title':
         return `<td>
-          <div class="list-title">${t.title || '(bez tytułu)'}</div>
-
+          <div class="list-title-wrap">
+            <span class="list-title list-inline-title" data-id="${t.id}" title="Kliknij dwukrotnie, aby edytować">${t.title || '(bez tytułu)'}</span>
+            <input class="list-title-input hidden" data-id="${t.id}" value="${(t.title || '').replace(/"/g,'&quot;')}" />
+          </div>
         </td>`;
-      case 'assignee':
-        return `<td style="font-size:.75rem;color:var(--text-muted);">${t.assigneeName || '—'}</td>`;
+      case 'assignee': {
+        const initials = t.assigneeName ? getInitials(t.assigneeName) : null;
+        const color = nameToColor(t.assigneeName);
+        return `<td>
+          <div class="list-assignee-cell" data-id="${t.id}" title="${t.assigneeName || 'Przypisz osobę'}">
+            ${initials
+              ? `<div class="list-avatar" style="background:${color};">${initials}</div><span class="list-assignee-name">${t.assigneeName}</span>`
+              : `<div class="list-avatar list-avatar-empty" title="Przypisz osobę">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="12" height="12"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </div>`
+            }
+          </div>
+        </td>`;
+      }
       case 'status':
         return `<td style="font-size:.75rem;color:var(--text-muted);">${col?.name || '—'}</td>`;
-      case 'due':
-        return `<td class="list-due ${overdue ? 'overdue' : ''}">${t.dueDate ? formatDate(t.dueDate) : '—'}</td>`;
-      case 'priority':
-        return `<td><span class="list-pill ${pr}">${prLabel}</span></td>`;
+      case 'due': {
+        const dateVal = t.dueDate || '';
+        const dateDisplay = t.dueDate ? formatDate(t.dueDate) : '—';
+        return `<td>
+          <div class="list-due-cell ${overdue ? 'overdue' : ''}" data-id="${t.id}">
+            <span class="list-due-display">${dateDisplay}</span>
+            <input class="list-due-input hidden" type="date" data-id="${t.id}" value="${dateVal}" />
+          </div>
+        </td>`;
+      }
+      case 'priority': {
+        const prOptions = [
+          { val: 'high',   label: 'Wysoki',  cls: 'high' },
+          { val: 'medium', label: 'Średni',  cls: 'medium' },
+          { val: 'low',    label: 'Niski',   cls: 'low' },
+        ];
+        return `<td>
+          <div class="list-priority-cell" data-id="${t.id}">
+            <span class="list-pill ${pr} list-pill-btn">${prLabel}</span>
+            <div class="list-priority-dropdown hidden">
+              ${prOptions.map(o => `<div class="list-priority-option ${o.val === pr ? 'active' : ''}" data-val="${o.val}" data-id="${t.id}"><span class="list-pill ${o.cls}">${o.label}</span></div>`).join('')}
+            </div>
+          </div>
+        </td>`;
+      }
       case 'created': {
         const cd = t.createdAt ? (t.createdAt.toDate ? t.createdAt.toDate() : new Date(t.createdAt)) : null;
         return `<td style="font-size:.73rem;color:var(--text-muted);">${cd ? cd.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</td>`;
@@ -2672,17 +2914,22 @@ async function addMember(projectId, email) {
 }
 
 function renderMembersList(projectId) {
+  // Always read the freshest snapshot from the projects map
   const proj = projects[projectId];
   const list = $('members-list');
-  const isOwner = proj?.ownerId === currentUser.uid;
+
+  // Determine ownership: prefer ownerId field, fall back to role in members array
+  // (handles older projects created before ownerId was introduced)
+  const isOwner =
+    proj?.ownerId === currentUser.uid ||
+    (proj?.members || []).some(m => m.uid === currentUser.uid && m.role === 'owner');
 
   list.innerHTML = (proj?.members || []).map(m => {
-    // Wszyscy widzą kto jest właścicielem
     const roleLabel = m.role === 'owner' ? '👑 Właściciel' : 'Członek';
 
-    // Przycisk usunięcia widzi tylko właściciel, i nie może usunąć siebie
+    // Remove button: only owner sees it, and only for other members (not self)
     const removeBtn = isOwner && m.uid !== currentUser.uid
-      ? `<span class="member-remove" data-uid="${m.uid}">✕</span>`
+      ? `<button class="member-remove" data-uid="${m.uid}" title="Usuń członka">✕</button>`
       : '';
 
     return `
@@ -2697,12 +2944,21 @@ function renderMembersList(projectId) {
   list.querySelectorAll('.member-remove').forEach(btn => {
     btn.addEventListener('click', async () => {
       const uid = btn.dataset.uid;
-      const member = proj.members.find(m => m.uid === uid);
-      await updateDoc(doc(db, 'projects', projectId), {
-        memberIds: arrayRemove(uid),
-        members: arrayRemove(member)
+      const currentProj = projects[projectId]; // fresh reference
+      showConfirm('Usuń członka', 'Na pewno chcesz usunąć tego członka z projektu?', async () => {
+        try {
+          const updatedMembers = (currentProj?.members || []).filter(m => m.uid !== uid);
+          await updateDoc(doc(db, 'projects', projectId), {
+            memberIds: arrayRemove(uid),
+            members: updatedMembers
+          });
+          showToast('Członek usunięty', 'success');
+          renderMembersList(projectId);
+        } catch(e) {
+          console.error('removeMember error:', e);
+          showToast('Nie udało się usunąć członka: ' + (e.message || e.code || e), 'error');
+        }
       });
-      renderMembersList(projectId);
     });
   });
 }
@@ -2774,6 +3030,292 @@ async function changePassword() {
     closeModal('change-password-modal');
   } catch (e) {
     showToast('Błąd: ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// PROFILE EDIT (display name + avatar)
+// ============================================================
+async function saveDisplayName() {
+  const firstName = ($('settings-firstname-input')?.value || '').trim();
+  const lastName = ($('settings-lastname-input')?.value || '').trim();
+  if (!firstName) { showToast('Podaj imię', 'error'); return; }
+  const newName = lastName ? firstName + ' ' + lastName : firstName;
+  try {
+    await updateProfile(currentUser, { displayName: newName });
+    // Also update in Firestore users doc
+    await updateDoc(doc(db, 'users', currentUser.uid), { name: newName, firstName, lastName });
+    // Update project member entries (best-effort)
+    for (const pid of Object.keys(projects)) {
+      const proj = projects[pid];
+      if (!proj?.members) continue;
+      const idx = proj.members.findIndex(m => m.uid === currentUser.uid);
+      if (idx !== -1) {
+        const updatedMembers = [...proj.members];
+        updatedMembers[idx] = { ...updatedMembers[idx], name: newName };
+        updateDoc(doc(db, 'projects', pid), { members: updatedMembers }).catch(() => {});
+      }
+    }
+    // Also update assigneeName on tasks assigned to this user (best-effort)
+    for (const [pid, projTasks] of Object.entries(tasks)) {
+      for (const [tid, task] of Object.entries(projTasks)) {
+        if (task.assigneeId === currentUser.uid && task.assigneeName !== newName) {
+          updateDoc(doc(db, 'tasks', tid), { assigneeName: newName }).catch(() => {});
+        }
+      }
+    }
+    updateUserUI();
+    populateSettingsModal();
+    showToast('Imię i nazwisko zaktualizowane!', 'success');
+  } catch (e) {
+    showToast('Błąd: ' + e.message, 'error');
+  }
+}
+
+// ============================================================
+// AVATAR CROP MODAL
+// ============================================================
+let _cropState = { img: null, zoom: 1, offsetX: 0, offsetY: 0, isDragging: false, startX: 0, startY: 0, startOffX: 0, startOffY: 0 };
+
+function openAvatarCropModal(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataURL = e.target.result;
+    const cropImg = $('avatar-crop-img');
+    const stage = $('avatar-crop-stage');
+    const zoomSlider = $('avatar-crop-zoom');
+
+    cropImg.onload = () => {
+      const STAGE = 240;
+      const nat = Math.min(cropImg.naturalWidth, cropImg.naturalHeight);
+      const scale = STAGE / nat;
+      _cropState.img = cropImg;
+      _cropState.zoom = 1;
+      // Center image
+      const w = cropImg.naturalWidth * scale;
+      const h = cropImg.naturalHeight * scale;
+      _cropState.offsetX = (STAGE - w) / 2;
+      _cropState.offsetY = (STAGE - h) / 2;
+      _cropState._baseScale = scale;
+      zoomSlider.value = 1;
+      _applyAvatarCropTransform();
+    };
+    cropImg.src = dataURL;
+    openModal('avatar-crop-modal');
+  };
+  reader.readAsDataURL(file);
+}
+
+function _applyAvatarCropTransform() {
+  const img = $('avatar-crop-img');
+  if (!img) return;
+  const STAGE = 240;
+  const scale = _cropState._baseScale * _cropState.zoom;
+  const w = _cropState.img.naturalWidth * scale;
+  const h = _cropState.img.naturalHeight * scale;
+  // Clamp offsets so image fills the circle
+  _cropState.offsetX = Math.min(0, Math.max(STAGE - w, _cropState.offsetX));
+  _cropState.offsetY = Math.min(0, Math.max(STAGE - h, _cropState.offsetY));
+  img.style.width = w + 'px';
+  img.style.height = h + 'px';
+  img.style.transform = `translate(${_cropState.offsetX}px, ${_cropState.offsetY}px)`;
+}
+
+function setupAvatarCropListeners() {
+  const stage = $('avatar-crop-stage');
+  const zoomSlider = $('avatar-crop-zoom');
+
+  // Drag
+  stage.addEventListener('mousedown', (e) => {
+    _cropState.isDragging = true;
+    _cropState.startX = e.clientX;
+    _cropState.startY = e.clientY;
+    _cropState.startOffX = _cropState.offsetX;
+    _cropState.startOffY = _cropState.offsetY;
+    stage.classList.add('dragging');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!_cropState.isDragging) return;
+    _cropState.offsetX = _cropState.startOffX + (e.clientX - _cropState.startX);
+    _cropState.offsetY = _cropState.startOffY + (e.clientY - _cropState.startY);
+    _applyAvatarCropTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    _cropState.isDragging = false;
+    stage?.classList.remove('dragging');
+  });
+  // Touch drag
+  stage.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    _cropState.isDragging = true;
+    _cropState.startX = t.clientX;
+    _cropState.startY = t.clientY;
+    _cropState.startOffX = _cropState.offsetX;
+    _cropState.startOffY = _cropState.offsetY;
+    e.preventDefault();
+  }, { passive: false });
+  window.addEventListener('touchmove', (e) => {
+    if (!_cropState.isDragging) return;
+    const t = e.touches[0];
+    _cropState.offsetX = _cropState.startOffX + (t.clientX - _cropState.startX);
+    _cropState.offsetY = _cropState.startOffY + (t.clientY - _cropState.startY);
+    _applyAvatarCropTransform();
+  }, { passive: false });
+  window.addEventListener('touchend', () => { _cropState.isDragging = false; });
+
+  // Zoom slider
+  zoomSlider.addEventListener('input', () => {
+    const STAGE = 240;
+    const prevZoom = _cropState.zoom;
+    const newZoom = parseFloat(zoomSlider.value);
+    // Keep center of stage anchored
+    const cx = STAGE / 2;
+    const cy = STAGE / 2;
+    const scale = _cropState._baseScale;
+    _cropState.offsetX = cx - (cx - _cropState.offsetX) * (newZoom / prevZoom);
+    _cropState.offsetY = cy - (cy - _cropState.offsetY) * (newZoom / prevZoom);
+    _cropState.zoom = newZoom;
+    _applyAvatarCropTransform();
+  });
+
+  // Scroll to zoom
+  stage.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.07 : 0.07;
+    const newZoom = Math.min(3, Math.max(1, _cropState.zoom + delta));
+    const STAGE = 240;
+    const cx = STAGE / 2;
+    const cy = STAGE / 2;
+    const prevZoom = _cropState.zoom;
+    _cropState.offsetX = cx - (cx - _cropState.offsetX) * (newZoom / prevZoom);
+    _cropState.offsetY = cy - (cy - _cropState.offsetY) * (newZoom / prevZoom);
+    _cropState.zoom = newZoom;
+    zoomSlider.value = newZoom;
+    _applyAvatarCropTransform();
+  }, { passive: false });
+
+  // Buttons
+  $('avatar-crop-cancel')?.addEventListener('click', () => closeModal('avatar-crop-modal'));
+  $('avatar-crop-close')?.addEventListener('click', () => closeModal('avatar-crop-modal'));
+  $('avatar-crop-overlay')?.addEventListener('click', () => closeModal('avatar-crop-modal'));
+  $('avatar-crop-save')?.addEventListener('click', saveCroppedAvatar);
+}
+
+async function saveCroppedAvatar() {
+  const STAGE = 240;
+  const canvas = document.createElement('canvas');
+  canvas.width = STAGE;
+  canvas.height = STAGE;
+  const ctx = canvas.getContext('2d');
+  // Draw circle clip
+  ctx.beginPath();
+  ctx.arc(STAGE/2, STAGE/2, STAGE/2, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.clip();
+  // Draw image with current transform
+  const scale = _cropState._baseScale * _cropState.zoom;
+  ctx.drawImage(_cropState.img, _cropState.offsetX, _cropState.offsetY,
+    _cropState.img.naturalWidth * scale, _cropState.img.naturalHeight * scale);
+
+  canvas.toBlob(async (blob) => {
+    if (!blob) { showToast('Błąd generowania obrazu', 'error'); return; }
+    closeModal('avatar-crop-modal');
+    await uploadAvatarBlob(blob);
+  }, 'image/jpeg', 0.92);
+}
+
+async function uploadAvatarBlob(blob) {
+  if (!blob || !currentUser) return;
+  const avatarEl = $('settings-user-avatar');
+  if (avatarEl) avatarEl.classList.add('uploading');
+  const saveBtn = $('avatar-crop-save');
+  if (saveBtn) saveBtn.disabled = true;
+  try {
+    const storageRef = ref(storage, `avatars/${currentUser.uid}`);
+    await uploadBytes(storageRef, blob, { contentType: 'image/jpeg' });
+    const downloadURL = await getDownloadURL(storageRef);
+    await updateProfile(currentUser, { photoURL: downloadURL });
+    await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: downloadURL });
+    updateUserUI();
+    populateSettingsModal();
+    showToast('Zdjęcie profilowe zaktualizowane!', 'success');
+  } catch (e) {
+    // If CORS error – store as base64 in Firestore as fallback
+    if (e.message?.includes('CORS') || e.code === 'storage/unknown') {
+      try {
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+          const dataURL = ev.target.result;
+          await updateProfile(currentUser, { photoURL: dataURL });
+          await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: dataURL });
+          updateUserUI();
+          populateSettingsModal();
+          showToast('Zdjęcie zapisane (lokalnie). Skonfiguruj CORS Firebase Storage dla pełnej obsługi.', 'success');
+        };
+        reader.readAsDataURL(blob);
+      } catch (e2) {
+        showToast('Błąd: ' + e2.message, 'error');
+      }
+    } else {
+      showToast('Błąd przesyłania: ' + e.message, 'error');
+    }
+  } finally {
+    if (avatarEl) avatarEl.classList.remove('uploading');
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
+async function populateSettingsModal() {
+  if (!currentUser) return;
+  const name = currentUser.displayName || 'Użytkownik';
+  const email = currentUser.email || '';
+  const photoURL = currentUser.photoURL || '';
+
+  const nameEl = $('settings-user-name');
+  const emailEl = $('settings-user-email');
+  const avatarEl = $('settings-user-avatar');
+  const imgEl = $('settings-avatar-img');
+  const initialsEl = $('settings-avatar-initials');
+  const nameInput = $('settings-displayname-input');
+  const firstInput = $('settings-firstname-input');
+  const lastInput = $('settings-lastname-input');
+
+  if (nameEl) nameEl.textContent = name;
+  if (emailEl) emailEl.textContent = email;
+  if (nameInput) nameInput.value = name;
+
+  // Load firstName / lastName from Firestore
+  try {
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    const data = snap.data() || {};
+    const firstName = data.firstName || '';
+    const lastName = data.lastName || '';
+    if (firstInput) firstInput.value = firstName;
+    if (lastInput) lastInput.value = lastName;
+    // Fallback: split displayName if no separate fields stored yet
+    if (!firstName && !lastName && name && name !== 'Użytkownik') {
+      const parts = name.split(' ');
+      if (firstInput) firstInput.value = parts[0] || '';
+      if (lastInput) lastInput.value = parts.slice(1).join(' ') || '';
+    }
+  } catch(e) {
+    // fallback: split displayName
+    const parts = name.split(' ');
+    if (firstInput) firstInput.value = parts[0] || '';
+    if (lastInput) lastInput.value = parts.slice(1).join(' ') || '';
+  }
+
+  if (avatarEl && imgEl && initialsEl) {
+    if (photoURL) {
+      imgEl.src = photoURL;
+      imgEl.style.display = 'block';
+      initialsEl.style.display = 'none';
+    } else {
+      imgEl.style.display = 'none';
+      initialsEl.style.display = '';
+      initialsEl.textContent = getInitials(name);
+    }
   }
 }
 
@@ -3082,17 +3624,7 @@ $('project-calendar-btn').addEventListener('click', () => {
 
   // Settings modal
   $('open-settings-btn')?.addEventListener('click', () => {
-    // Populate user info in settings modal
-    if (currentUser) {
-      const name = currentUser.displayName || 'Użytkownik';
-      const email = currentUser.email || '';
-      const el = $('settings-user-name');
-      const el2 = $('settings-user-email');
-      const av = $('settings-user-avatar');
-      if (el) el.textContent = name;
-      if (el2) el2.textContent = email;
-      if (av) av.textContent = getInitials(name);
-    }
+    populateSettingsModal();
     openModal('settings-modal');
   });
   $('close-settings-modal')?.addEventListener('click', () => closeModal('settings-modal'));
@@ -3107,6 +3639,26 @@ $('project-calendar-btn').addEventListener('click', () => {
     $('confirm-password-input').value = '';
     openModal('change-password-modal');
   });
+  // Save display name
+  $('save-profile-btn')?.addEventListener('click', saveDisplayName);
+  $('settings-firstname-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveDisplayName();
+  });
+  $('settings-lastname-input')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveDisplayName();
+  });
+  // Avatar click → file picker
+  $('settings-user-avatar')?.addEventListener('click', () => {
+    $('avatar-file-input')?.click();
+  });
+  $('avatar-file-input')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (file) openAvatarCropModal(file);
+    e.target.value = '';
+  });
+
+  // Avatar crop modal
+  setupAvatarCropListeners();
 
   // Change password
   $('close-change-pw-modal').addEventListener('click', () => closeModal('change-password-modal'));
