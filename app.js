@@ -959,6 +959,9 @@ function openProject(projectId) {
     const f = savedProjFilters[projectId];
     if (f.priority) $('proj-filter-priority').value = f.priority;
     if (f.assignee) $('proj-filter-assignee').value = f.assignee;
+    if (f.showDone !== undefined && $('project-list-show-done')) {
+      $('project-list-show-done').checked = f.showDone;
+    }
   }
 
   renderProjectDashboard(projectId);
@@ -3456,7 +3459,14 @@ function setupEventListeners() {
   $('project-view-list-btn')?.addEventListener('click', () => setProjectView('list'));
   $('project-list-search')?.addEventListener('input', () => currentProjectId && renderProjectList(currentProjectId));
 
-  $('project-list-show-done')?.addEventListener('change', () => currentProjectId && renderProjectList(currentProjectId));
+  $('project-list-show-done')?.addEventListener('change', () => {
+    if (currentProjectId) {
+      if (!savedProjFilters[currentProjectId]) savedProjFilters[currentProjectId] = {};
+      savedProjFilters[currentProjectId].showDone = $('project-list-show-done').checked;
+      try { localStorage.setItem('mw_proj_filters', JSON.stringify(savedProjFilters)); } catch(e) {}
+      renderProjectList(currentProjectId);
+    }
+  });
 
   // ---- Dodaj zadanie (split button) — jeden raz, nie w bindListTableInteractions ----
   $('list-add-task-global')?.addEventListener('click', () => {
