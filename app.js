@@ -937,6 +937,8 @@ function openProject(projectId) {
   // Hide sub-views
   $('project-calendar-view').classList.add('hidden');
   $('gantt-view').classList.add('hidden');
+  $('project-chat-view').classList.add('hidden');
+  $('project-notes-view').classList.add('hidden');
   // Widoki w projekcie: kanban / lista
   // Ustaw domyślny widok po wejściu w projekt
   currentProjectView = 'list';
@@ -1719,7 +1721,7 @@ function renderCalendarGrid(containerId, y, m, taskList, clickable) {
 // PROJECT LIST VIEW (Asana-like)
 // ============================================================
 function setActiveProjectTab(activeId) {
-  ['project-view-kanban-btn','project-view-list-btn','project-calendar-btn','project-gantt-btn'].forEach(id => {
+  ['project-view-kanban-btn','project-view-list-btn','project-calendar-btn','project-gantt-btn','project-chat-btn','project-notes-btn'].forEach(id => {
     $(id)?.classList.toggle('active', id === activeId);
   });
 }
@@ -1728,6 +1730,7 @@ function setProjectView(view) {
   currentProjectView = view;
   setActiveProjectTab(view === 'list' ? 'project-view-list-btn' : 'project-view-kanban-btn');
   $('project-chat-view').classList.add('hidden');
+  $('project-notes-view').classList.add('hidden');
   if (view === 'list') {
     $('kanban-board').classList.add('hidden');
     $('project-list-view').classList.remove('hidden');
@@ -3558,6 +3561,17 @@ $('project-calendar-btn').addEventListener('click', () => {
     setActiveProjectTab('project-chat-btn');
     openProjectChat(currentProjectId);
   });
+  $('project-notes-btn').addEventListener('click', () => {
+    $('kanban-board').classList.add('hidden');
+    $('project-list-view').classList.add('hidden');
+    $('project-dashboard').classList.add('hidden');
+    $('project-calendar-view').classList.add('hidden');
+    $('gantt-view').classList.add('hidden');
+    $('project-chat-view').classList.add('hidden');
+    $('project-notes-view').classList.remove('hidden');
+    setActiveProjectTab('project-notes-btn');
+    renderProjectNotes(currentProjectId);
+  });
   $('proj-cal-prev').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() - 1); renderProjectCalendar(currentProjectId); });
   $('proj-cal-next').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() + 1); renderProjectCalendar(currentProjectId); });
 
@@ -3729,3 +3743,545 @@ async function initApp() {
 }
 
 initApp();
+
+// ============================================================
+// PROJECT NOTES TAB — Meetings & Notes
+// ============================================================
+
+let currentPNotesTab = 'meetings';      // 'meetings' | 'notes'
+let currentMeetingId = null;
+let currentProjNoteId = null;
+let projNoteSaveTimer = null;
+let meetingNoteSaveTimer = null;
+
+// --- State ---
+let projectMeetings = {};   // { projectId: { meetingId: meetingObj } }
+let projectPNotes = {};     // { projectId: { noteId: noteObj } }
+
+// ---- RENDER ENTRY POINT ----
+function renderProjectNotes(projectId) {
+  if (!projectId) return;
+  currentMeetingId = null;
+  currentProjNoteId = null;
+
+  // Sub-tab switcher
+  $('pnotes-tab-meetings').addEventListener('click', () => switchPNotesTab('meetings'));
+  $('pnotes-tab-notes').addEventListener('click', () => switchPNotesTab('notes'));
+  $('pnotes-add-btn').addEventListener('click', () => {
+    if (currentPNotesTab === 'meetings') openMeetingModal(null);
+    else openProjNoteModal(null);
+  });
+
+  switchPNotesTab(currentPNotesTab);
+  subscribeToProjectMeetings(projectId);
+  subscribeToProjectPNotes(projectId);
+}
+
+function switchPNotesTab(tab) {
+  currentPNotesTab = tab;
+  $('pnotes-tab-meetings').classList.toggle('active', tab === 'meetings');
+  $('pnotes-tab-notes').classList.toggle('active', tab === 'notes');
+  $('pnotes-meetings-panel').classList.toggle('hidden', tab !== 'meetings');
+  $('pnotes-notes-panel').classList.toggle('hidden', tab !== 'notes');
+  $('pnotes-add-label').textContent = tab === 'meetings' ? 'Dodaj spotkanie' : 'Dodaj notatkę';
+}
+
+// ---- FIRESTORE SUBSCRIPTIONS ----
+function subscribeToProjectMeetings(projectId) {
+  const q = query(collection(db, 'projectMeetings'), where('projectId', '==', projectId), where('userId', '==', currentUser.uid));
+  onSnapshot(q, snap => {
+    if (!projectMeetings[projectId]) projectMeetings[projectId] = {};
+    projectMeetings[projectId] = {};
+    snap.forEach(d => { projectMeetings[projectId][d.id] = { id: d.id, ...d.data() }; });
+    if (!$('project-notes-view').classList.contains('hidden')) renderMeetingsList(projectId);
+  });
+}
+
+function subscribeToProjectPNotes(projectId) {
+  const q = query(collection(db, 'projectNotes'), where('projectId', '==', projectId), where('userId', '==', currentUser.uid));
+  onSnapshot(q, snap => {
+    if (!projectPNotes[projectId]) projectPNotes[projectId] = {};
+    projectPNotes[projectId] = {};
+    snap.forEach(d => { projectPNotes[projectId][d.id] = { id: d.id, ...d.data() }; });
+    if (!$('project-notes-view').classList.contains('hidden')) renderPNotesList(projectId);
+  });
+}
+
+// ---- MEETINGS LIST ----
+function renderMeetingsList(projectId) {
+  const container = $('pnotes-meetings-list');
+  if (!container) return;
+  const meetings = Object.values(projectMeetings[projectId] || {});
+  meetings.sort((a, b) => {
+    const da = a.date || ''; const db2 = b.date || '';
+    return da < db2 ? 1 : -1;
+  });
+  if (!meetings.length) {
+    container.innerHTML = `<div class="pnotes-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      <p>Brak spotkań.<br>Dodaj pierwsze!</p></div>`;
+    return;
+  }
+  container.innerHTML = meetings.map(m => {
+    const dateStr = m.date ? formatMeetingDate(m.date, m.time) : '';
+    return `<div class="pnotes-meeting-item ${currentMeetingId === m.id ? 'active' : ''}" data-id="${m.id}">
+      <div class="pnotes-meeting-item-title">${escHtml(m.title || 'Bez tytułu')}</div>
+      ${dateStr ? `<div class="pnotes-meeting-item-date">📅 ${dateStr}</div>` : ''}
+      <div class="pnotes-meeting-item-preview">${escHtml((m.description || '').slice(0, 60))}</div>
+    </div>`;
+  }).join('');
+  container.querySelectorAll('.pnotes-meeting-item').forEach(el => {
+    el.addEventListener('click', () => openMeetingDetail(projectId, el.dataset.id));
+  });
+  if (currentMeetingId && projectMeetings[projectId]?.[currentMeetingId]) {
+    openMeetingDetail(projectId, currentMeetingId);
+  }
+}
+
+function formatMeetingDate(date, time) {
+  if (!date) return '';
+  const d = new Date(date + (time ? 'T' + time : ''));
+  const opts = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+  let str = d.toLocaleDateString('pl-PL', opts);
+  if (time) str += ', ' + time;
+  return str;
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---- MEETING DETAIL ----
+function openMeetingDetail(projectId, meetingId) {
+  currentMeetingId = meetingId;
+  const m = (projectMeetings[projectId] || {})[meetingId];
+  if (!m) return;
+
+  // Update active in list
+  document.querySelectorAll('.pnotes-meeting-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === meetingId);
+  });
+
+  const detailCol = $('pnotes-meeting-detail');
+  const dateStr = m.date ? formatMeetingDate(m.date, m.time) : '';
+  const attachHtml = renderAttachList(m.attachments || [], meetingId, 'meeting', projectId);
+
+  detailCol.innerHTML = `
+    <div class="pnotes-meeting-detail">
+      <div class="pnotes-meeting-detail-header">
+        <div style="flex:1;min-width:0;">
+          <div class="pnotes-meeting-detail-title">${escHtml(m.title || 'Bez tytułu')}</div>
+          <div class="pnotes-meeting-meta">
+            ${dateStr ? `<span class="pnotes-meta-chip date">📅 ${dateStr}</span>` : ''}
+            ${m.participants ? `<span class="pnotes-meta-chip people">👥 ${escHtml(m.participants)}</span>` : ''}
+          </div>
+        </div>
+        <div class="pnotes-detail-actions">
+          <button class="btn-secondary small" id="edit-meeting-btn">✏️ Edytuj</button>
+          <button class="btn-danger small" id="delete-meeting-btn">🗑</button>
+        </div>
+      </div>
+      <div class="pnotes-meeting-body">
+        ${m.description ? `<div>
+          <div class="pnotes-section-label">Opis / Agenda</div>
+          <div class="pnotes-desc-text">${escHtml(m.description)}</div>
+        </div>` : ''}
+
+        <div>
+          <div class="pnotes-section-label">Notatki ze spotkania</div>
+          <div class="pnotes-meeting-notes-area">
+            <div class="pnotes-note-toolbar" id="meeting-note-toolbar">
+              ${noteToolbarHtml('meeting-note-body')}
+            </div>
+            <div class="pnotes-note-editable" id="meeting-note-body" contenteditable="true"
+              data-placeholder="Dodaj notatki ze spotkania..."
+              data-meetingid="${meetingId}"
+            >${m.notes || ''}</div>
+          </div>
+        </div>
+
+        <div class="pnotes-attachments-section">
+          <div class="pnotes-section-label">Załączniki</div>
+          <label class="pnotes-attach-upload-btn" id="meeting-attach-label-${meetingId}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Dodaj załącznik
+            <input type="file" id="meeting-attach-input-${meetingId}" multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.zip"
+              style="display:none;"/>
+          </label>
+          <div class="pnotes-attach-list" id="meeting-attach-list-${meetingId}">${attachHtml}</div>
+          <div id="meeting-attach-progress-${meetingId}"></div>
+        </div>
+      </div>
+    </div>`;
+
+  // Toolbar buttons
+  bindNoteToolbar('meeting-note-toolbar', 'meeting-note-body');
+
+  // Auto-save notes
+  $('meeting-note-body').addEventListener('input', () => {
+    clearTimeout(meetingNoteSaveTimer);
+    meetingNoteSaveTimer = setTimeout(async () => {
+      const body = $('meeting-note-body')?.innerHTML || '';
+      await updateDoc(doc(db, 'projectMeetings', meetingId), { notes: body, updatedAt: serverTimestamp() });
+    }, 900);
+  });
+
+  // Edit button
+  $('edit-meeting-btn').addEventListener('click', () => openMeetingModal(meetingId, projectId));
+
+  // Delete button
+  $('delete-meeting-btn').addEventListener('click', () => {
+    showConfirm('Usuń spotkanie', 'Spotkanie zostanie permanentnie usunięte.', async () => {
+      await deleteDoc(doc(db, 'projectMeetings', meetingId));
+      currentMeetingId = null;
+      detailCol.innerHTML = `<div class="pnotes-detail-empty">
+        <p>Wybierz spotkanie aby zobaczyć szczegóły</p></div>`;
+    });
+  });
+
+  // File upload
+  const attachInput = $(`meeting-attach-input-${meetingId}`);
+  if (attachInput) {
+    attachInput.addEventListener('change', e => uploadMeetingFiles(e.target.files, meetingId, projectId));
+  }
+
+  // Delete attachment buttons
+  bindAttachDeleteBtns(meetingId, 'meeting', projectId);
+}
+
+// ---- MEETING MODAL (Add / Edit) ----
+let editingMeetingId = null;
+let pendingMeetingFiles = [];
+
+function openMeetingModal(meetingId, projectId) {
+  editingMeetingId = meetingId;
+  pendingMeetingFiles = [];
+  const m = meetingId ? (projectMeetings[currentProjectId] || {})[meetingId] : null;
+  $('meeting-modal-title').textContent = meetingId ? 'Edytuj spotkanie' : 'Nowe spotkanie';
+  $('meeting-title-input').value = m?.title || '';
+  $('meeting-date-input').value = m?.date || '';
+  $('meeting-time-input').value = m?.time || '';
+  $('meeting-participants-input').value = m?.participants || '';
+  $('meeting-desc-input').value = m?.description || '';
+  $('meeting-file-list').innerHTML = '';
+  // Show existing attachments if editing
+  if (m?.attachments?.length) {
+    $('meeting-file-list').innerHTML = m.attachments.map(a =>
+      `<span class="file-chip">📎 ${escHtml(a.name)}</span>`
+    ).join('');
+  }
+  openModal('meeting-modal');
+}
+
+$('meeting-file-input').addEventListener('change', function() {
+  pendingMeetingFiles = Array.from(this.files);
+  const list = $('meeting-file-list');
+  // Keep existing chips (from edit mode) and add new
+  const newChips = pendingMeetingFiles.map((f, i) =>
+    `<span class="file-chip">${fileIcon(f.name)} ${escHtml(f.name)}<span class="file-chip-del" data-fi="${i}">✕</span></span>`
+  ).join('');
+  // Preserve existing attachment chips (from edit mode, no del button)
+  const existing = list.querySelectorAll('.file-chip:not(:has(.file-chip-del))');
+  list.innerHTML = Array.from(existing).map(e => e.outerHTML).join('') + newChips;
+  list.querySelectorAll('.file-chip-del').forEach(el => {
+    el.addEventListener('click', () => {
+      pendingMeetingFiles.splice(Number(el.dataset.fi), 1);
+      el.closest('.file-chip').remove();
+    });
+  });
+});
+
+$('save-meeting-btn').addEventListener('click', async () => {
+  const title = $('meeting-title-input').value.trim();
+  if (!title) { $('meeting-title-input').focus(); return; }
+  const data = {
+    title,
+    date: $('meeting-date-input').value,
+    time: $('meeting-time-input').value,
+    participants: $('meeting-participants-input').value.trim(),
+    description: $('meeting-desc-input').value.trim(),
+    projectId: currentProjectId,
+    userId: currentUser.uid,
+    updatedAt: serverTimestamp()
+  };
+  const btn = $('save-meeting-btn');
+  btn.disabled = true; btn.textContent = 'Zapisuję...';
+  try {
+    let docId = editingMeetingId;
+    if (!docId) {
+      data.createdAt = serverTimestamp();
+      data.attachments = [];
+      data.notes = '';
+      const ref2 = await addDoc(collection(db, 'projectMeetings'), data);
+      docId = ref2.id;
+    } else {
+      await updateDoc(doc(db, 'projectMeetings', docId), data);
+    }
+    // Upload new files
+    if (pendingMeetingFiles.length) {
+      const existing = editingMeetingId ? ((projectMeetings[currentProjectId] || {})[docId]?.attachments || []) : [];
+      const uploaded = await uploadFilesToStorage(pendingMeetingFiles, `meetings/${docId}`);
+      await updateDoc(doc(db, 'projectMeetings', docId), { attachments: [...existing, ...uploaded] });
+    }
+    closeModal('meeting-modal');
+    currentMeetingId = docId;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Zapisz spotkanie';
+  }
+});
+
+$('close-meeting-modal').addEventListener('click', () => closeModal('meeting-modal'));
+$('cancel-meeting-modal').addEventListener('click', () => closeModal('meeting-modal'));
+
+// ---- PROJECT NOTES LIST ----
+function renderPNotesList(projectId) {
+  const container = $('pnotes-notes-list');
+  if (!container) return;
+  const notes2 = Object.values(projectPNotes[projectId] || {});
+  notes2.sort((a, b) => {
+    const ta = a.updatedAt?.toMillis?.() || 0;
+    const tb = b.updatedAt?.toMillis?.() || 0;
+    return tb - ta;
+  });
+  const catLabels = { general: 'Ogólna', decision: 'Decyzja', idea: 'Pomysł', risk: 'Ryzyko', action: 'Do zrobienia' };
+  if (!notes2.length) {
+    container.innerHTML = `<div class="pnotes-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="40" height="40"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+      <p>Brak notatek.<br>Dodaj pierwszą!</p></div>`;
+    return;
+  }
+  container.innerHTML = notes2.map(n => `
+    <div class="pnotes-note-item ${currentProjNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
+      <div class="pnotes-note-item-title">${escHtml(n.title || 'Bez tytułu')}</div>
+      <span class="pnotes-note-item-cat ${n.category || 'general'}">${catLabels[n.category] || 'Ogólna'}</span>
+      <div class="pnotes-note-item-date">${n.updatedAt ? new Date(n.updatedAt.toDate()).toLocaleDateString('pl-PL') : ''}</div>
+    </div>`).join('');
+  container.querySelectorAll('.pnotes-note-item').forEach(el => {
+    el.addEventListener('click', () => openPNoteEditor(projectId, el.dataset.id));
+  });
+  if (currentProjNoteId && projectPNotes[projectId]?.[currentProjNoteId]) {
+    openPNoteEditor(projectId, currentProjNoteId);
+  }
+}
+
+// ---- PROJECT NOTE EDITOR ----
+function openPNoteEditor(projectId, noteId) {
+  currentProjNoteId = noteId;
+  const n = (projectPNotes[projectId] || {})[noteId];
+  if (!n) return;
+
+  document.querySelectorAll('.pnotes-note-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === noteId);
+  });
+
+  const catLabels = { general: 'Ogólna', decision: 'Decyzja', idea: 'Pomysł', risk: 'Ryzyko', action: 'Do zrobienia' };
+  const attachHtml = renderAttachList(n.attachments || [], noteId, 'projnote', projectId);
+
+  const wrap = $('pnotes-note-editor-wrap');
+  wrap.innerHTML = `
+    <div class="pnotes-note-full-editor">
+      <div class="pnotes-note-editor-header">
+        <input class="pnotes-note-title-edit" id="pnote-title-edit" value="${escHtml(n.title || '')}" placeholder="Tytuł notatki..." />
+        <span class="pnotes-note-item-cat ${n.category || 'general'}" style="flex-shrink:0;">${catLabels[n.category] || 'Ogólna'}</span>
+        <button class="btn-danger small" id="delete-pnote-btn">🗑</button>
+      </div>
+      <div class="pnotes-note-body-wrap">
+        <div class="pnotes-note-toolbar" id="pnote-toolbar">
+          ${noteToolbarHtml('pnote-body')}
+        </div>
+        <div class="pnotes-note-editable" id="pnote-body" contenteditable="true"
+          data-placeholder="Zacznij pisać notatki..."
+          style="flex:1;overflow-y:auto;"
+        >${n.body || ''}</div>
+      </div>
+      <div class="pnotes-note-footer">
+        <span>Ostatnia edycja: ${n.updatedAt ? new Date(n.updatedAt.toDate()).toLocaleString('pl-PL') : 'teraz'}</span>
+        <div class="pnotes-note-footer-attach">
+          <label class="pnotes-attach-upload-btn" style="padding:.25rem .6rem;font-size:.7rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            Załącz plik
+            <input type="file" id="pnote-attach-input-${noteId}" multiple
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg,.jpeg,.gif,.zip"
+              style="display:none;"/>
+          </label>
+          <div id="pnote-attach-progress-${noteId}"></div>
+        </div>
+      </div>
+      <div class="pnotes-attach-list" id="pnote-attach-list-${noteId}" style="padding:.4rem .9rem .6rem;">${attachHtml}</div>
+    </div>`;
+
+  bindNoteToolbar('pnote-toolbar', 'pnote-body');
+
+  // Auto-save title
+  $('pnote-title-edit').addEventListener('input', schedulePNoteSave);
+  $('pnote-body').addEventListener('input', schedulePNoteSave);
+
+  function schedulePNoteSave() {
+    clearTimeout(projNoteSaveTimer);
+    projNoteSaveTimer = setTimeout(async () => {
+      const title2 = $('pnote-title-edit')?.value || '';
+      const body2 = $('pnote-body')?.innerHTML || '';
+      await updateDoc(doc(db, 'projectNotes', noteId), { title: title2, body: body2, updatedAt: serverTimestamp() });
+    }, 800);
+  }
+
+  // Delete note
+  $('delete-pnote-btn').addEventListener('click', () => {
+    showConfirm('Usuń notatkę', 'Notatka zostanie permanentnie usunięta.', async () => {
+      await deleteDoc(doc(db, 'projectNotes', noteId));
+      currentProjNoteId = null;
+      wrap.innerHTML = `<div class="pnotes-detail-empty">
+        <p>Wybierz notatkę lub utwórz nową</p></div>`;
+    });
+  });
+
+  // File upload
+  const attachInput = $(`pnote-attach-input-${noteId}`);
+  if (attachInput) {
+    attachInput.addEventListener('change', e => uploadPNoteFiles(e.target.files, noteId, projectId));
+  }
+
+  bindAttachDeleteBtns(noteId, 'projnote', projectId);
+}
+
+// ---- PROJECT NOTE MODAL ----
+function openProjNoteModal() {
+  $('proj-note-title-input').value = '';
+  $('proj-note-category-input').value = 'general';
+  openModal('proj-note-modal');
+}
+
+$('save-proj-note-btn').addEventListener('click', async () => {
+  const title = $('proj-note-title-input').value.trim() || 'Nowa notatka';
+  const ref2 = await addDoc(collection(db, 'projectNotes'), {
+    title,
+    category: $('proj-note-category-input').value,
+    body: '',
+    attachments: [],
+    projectId: currentProjectId,
+    userId: currentUser.uid,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+  closeModal('proj-note-modal');
+  currentProjNoteId = ref2.id;
+  switchPNotesTab('notes');
+});
+$('close-proj-note-modal').addEventListener('click', () => closeModal('proj-note-modal'));
+$('cancel-proj-note-modal').addEventListener('click', () => closeModal('proj-note-modal'));
+
+// ---- NOTE TOOLBAR ----
+function noteToolbarHtml(targetId) {
+  return `
+    <button class="pnotes-toolbar-btn" title="Pogrubienie" data-cmd="bold" data-target="${targetId}"><b>B</b></button>
+    <button class="pnotes-toolbar-btn" title="Kursywa" data-cmd="italic" data-target="${targetId}"><i>I</i></button>
+    <button class="pnotes-toolbar-btn" title="Podkreślenie" data-cmd="underline" data-target="${targetId}"><u>U</u></button>
+    <button class="pnotes-toolbar-btn" title="Przekreślenie" data-cmd="strikeThrough" data-target="${targetId}"><s>S</s></button>
+    <span class="pnotes-toolbar-sep"></span>
+    <button class="pnotes-toolbar-btn" title="Lista punktowana" data-cmd="insertUnorderedList" data-target="${targetId}">•≡</button>
+    <button class="pnotes-toolbar-btn" title="Lista numerowana" data-cmd="insertOrderedList" data-target="${targetId}">1≡</button>
+    <button class="pnotes-toolbar-btn" title="Cytat" data-cmd="formatBlock" data-value="blockquote" data-target="${targetId}">"</button>
+    <span class="pnotes-toolbar-sep"></span>
+    <button class="pnotes-toolbar-btn" title="Nagłówek" data-cmd="formatBlock" data-value="h3" data-target="${targetId}"><b>H</b></button>
+    <button class="pnotes-toolbar-btn" title="Normalny tekst" data-cmd="formatBlock" data-value="p" data-target="${targetId}">¶</button>
+    <span class="pnotes-toolbar-sep"></span>
+    <button class="pnotes-toolbar-btn" title="Cofnij" data-cmd="undo" data-target="${targetId}">↩</button>
+    <button class="pnotes-toolbar-btn" title="Ponów" data-cmd="redo" data-target="${targetId}">↪</button>`;
+}
+
+function bindNoteToolbar(toolbarId, bodyId) {
+  const toolbar = $(toolbarId);
+  if (!toolbar) return;
+  toolbar.querySelectorAll('.pnotes-toolbar-btn').forEach(btn => {
+    btn.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const cmd = btn.dataset.cmd;
+      const val = btn.dataset.value || null;
+      $(bodyId)?.focus();
+      document.execCommand(cmd, false, val);
+    });
+  });
+}
+
+// ---- FILE UTILITIES ----
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['pdf'].includes(ext)) return '📄';
+  if (['doc','docx'].includes(ext)) return '📝';
+  if (['xls','xlsx'].includes(ext)) return '📊';
+  if (['ppt','pptx'].includes(ext)) return '📋';
+  if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '🖼️';
+  if (['zip','rar'].includes(ext)) return '🗜️';
+  return '📎';
+}
+
+function renderAttachList(attachments, docId, type, projectId) {
+  if (!attachments?.length) return '';
+  return attachments.map((a, i) => `
+    <div class="pnotes-attach-item" data-ai="${i}">
+      <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
+      <a href="${a.url}" target="_blank" rel="noopener">${escHtml(a.name)}</a>
+      <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń">✕</span>
+    </div>`).join('');
+}
+
+function bindAttachDeleteBtns(docId, type, projectId) {
+  const listId = type === 'meeting' ? `meeting-attach-list-${docId}` : `pnote-attach-list-${docId}`;
+  const listEl = $(listId);
+  if (!listEl) return;
+  listEl.querySelectorAll('.pnotes-attach-del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = Number(btn.dataset.idx);
+      const collName = type === 'meeting' ? 'projectMeetings' : 'projectNotes';
+      const docRef = doc(db, collName, docId);
+      const data = type === 'meeting'
+        ? (projectMeetings[projectId] || {})[docId]
+        : (projectPNotes[projectId] || {})[docId];
+      const attachments = [...(data?.attachments || [])];
+      attachments.splice(idx, 1);
+      await updateDoc(docRef, { attachments });
+      btn.closest('.pnotes-attach-item').remove();
+    });
+  });
+}
+
+async function uploadFilesToStorage(files, path2) {
+  const results = [];
+  for (const file of files) {
+    const sRef = ref(storage, `${path2}/${Date.now()}_${file.name}`);
+    await uploadBytes(sRef, file);
+    const url = await getDownloadURL(sRef);
+    results.push({ name: file.name, url, size: file.size });
+  }
+  return results;
+}
+
+async function uploadMeetingFiles(files, meetingId, projectId) {
+  const progressEl = $(`meeting-attach-progress-${meetingId}`);
+  if (progressEl) progressEl.innerHTML = `<div class="pnotes-upload-progress"><div class="pnotes-spinner"></div> Przesyłam pliki...</div>`;
+  try {
+    const uploaded = await uploadFilesToStorage(Array.from(files), `meetings/${meetingId}`);
+    const existing = (projectMeetings[projectId] || {})[meetingId]?.attachments || [];
+    await updateDoc(doc(db, 'projectMeetings', meetingId), { attachments: [...existing, ...uploaded] });
+    if (progressEl) progressEl.innerHTML = '';
+    // Re-open to refresh attachment list
+    openMeetingDetail(projectId, meetingId);
+  } catch(e) {
+    if (progressEl) progressEl.innerHTML = `<span style="color:#e53e3e;font-size:.72rem;">Błąd przesyłania: ${e.message}</span>`;
+  }
+}
+
+async function uploadPNoteFiles(files, noteId, projectId) {
+  const progressEl = $(`pnote-attach-progress-${noteId}`);
+  if (progressEl) progressEl.innerHTML = `<div class="pnotes-upload-progress"><div class="pnotes-spinner"></div> Przesyłam...</div>`;
+  try {
+    const uploaded = await uploadFilesToStorage(Array.from(files), `projnotes/${noteId}`);
+    const existing = (projectPNotes[projectId] || {})[noteId]?.attachments || [];
+    await updateDoc(doc(db, 'projectNotes', noteId), { attachments: [...existing, ...uploaded] });
+    if (progressEl) progressEl.innerHTML = '';
+    openPNoteEditor(projectId, noteId);
+  } catch(e) {
+    if (progressEl) progressEl.innerHTML = `<span style="color:#e53e3e;font-size:.72rem;">Błąd przesyłania: ${e.message}</span>`;
+  }
+}
