@@ -525,6 +525,47 @@ body {
 
 .project-filters-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; font-size:.78rem; color:var(--text-muted); padding:.4rem 0; border-bottom:1.5px solid var(--border); margin-bottom:.85rem; }
 
+/* ── Universal project filter bar ── */
+.proj-universal-filters {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .45rem 1rem;
+  background: var(--surface);
+  border-bottom: 1.5px solid var(--border);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.proj-filter-search {
+  flex: 1;
+  min-width: 140px;
+  max-width: 260px;
+  background: var(--bg-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: .28rem .65rem;
+  font-size: .78rem;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+.proj-filter-search:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+.proj-show-done-toggle {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  padding: .2rem .4rem;
+  border-radius: var(--radius-xs);
+  transition: var(--transition);
+}
+.proj-show-done-toggle:hover { background: var(--bg-alt); color: var(--text); }
+.proj-show-done-toggle input { accent-color: var(--accent); cursor: pointer; }
+
 /* KANBAN BOARD */
 .kanban-board { display:flex; gap:.85rem; overflow-x:auto; padding:1.1rem 1.5rem 1.5rem; min-height:500px; align-items:flex-start; }
 

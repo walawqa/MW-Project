@@ -387,22 +387,27 @@
 
       </div>
 
+      <!-- Universal filter bar — always visible -->
+      <div class="proj-universal-filters" id="proj-universal-filters">
+        <input type="text" id="proj-search" class="proj-filter-search" placeholder="🔍 Szukaj zadań..." />
+        <select id="proj-filter-priority" class="select-input small">
+          <option value="all">Wszystkie priorytety</option>
+          <option value="high">Wysoki</option>
+          <option value="medium">Średni</option>
+          <option value="low">Niski</option>
+        </select>
+        <select id="proj-filter-assignee" class="select-input small">
+          <option value="all">Wszyscy</option>
+        </select>
+        <label class="proj-show-done-toggle">
+          <input type="checkbox" id="proj-show-done" checked />
+          <span>Pokaż zakończone</span>
+        </label>
+      </div>
+
       <!-- Project Dashboard -->
       <div id="project-dashboard" class="project-dashboard">
         <div class="proj-stat-cards" id="proj-stat-cards"></div>
-        <div class="project-filters-bar">
-          <label>Filtruj: </label>
-          <select id="proj-filter-priority" class="select-input small">
-            <option value="all">Wszystkie priorytety</option>
-            <option value="high">Wysoki</option>
-            <option value="medium">Średni</option>
-            <option value="low">Niski</option>
-          </select>
-          <select id="proj-filter-assignee" class="select-input small">
-            <option value="all">Wszyscy</option>
-          </select>
-
-        </div>
       </div>
 
       <!-- Kanban Board -->
@@ -411,11 +416,7 @@
       <!-- Project List View -->
       <div id="project-list-view" class="project-list-view hidden">
         <div class="project-list-toolbar">
-          <input type="text" id="project-list-search" class="list-search" placeholder="Szukaj zadań w projekcie..." />
-          <label class="list-toggle">
-            <input type="checkbox" id="project-list-show-done" checked />
-            <span>Pokaż zakończone</span>
-          </label>
+
           <div class="list-add-split-wrap">
             <button class="list-add-split-main" id="list-add-task-global">
               <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

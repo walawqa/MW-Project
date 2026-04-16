@@ -962,11 +962,15 @@ function openProject(projectId) {
   // Load saved filters
   if (savedProjFilters[projectId]) {
     const f = savedProjFilters[projectId];
-    if (f.priority) $('proj-filter-priority').value = f.priority;
-    if (f.assignee) $('proj-filter-assignee').value = f.assignee;
-    if (f.showDone !== undefined && $('project-list-show-done')) {
-      $('project-list-show-done').checked = f.showDone;
-    }
+    if (f.priority)              $('proj-filter-priority').value = f.priority;
+    if (f.assignee)              $('proj-filter-assignee').value = f.assignee;
+    if (f.search !== undefined)  $('proj-search').value          = f.search || '';
+    if (f.showDone !== undefined) $('proj-show-done').checked    = f.showDone;
+  } else {
+    $('proj-filter-priority').value = 'all';
+    $('proj-filter-assignee').value = 'all';
+    $('proj-search').value = '';
+    $('proj-show-done').checked = true;
   }
 
   renderProjectDashboard(projectId);
@@ -975,13 +979,20 @@ function openProject(projectId) {
   renderSidebarProjects();
 }
 
-function getFilteredTasks(projectId) {
+function getFilteredTasks(projectId, opts = {}) {
   const projTasks = Object.values(tasks[projectId] || {});
-  const priority = $('proj-filter-priority').value;
-  const assignee = $('proj-filter-assignee').value;
+  const priority  = $('proj-filter-priority')?.value || 'all';
+  const assignee  = $('proj-filter-assignee')?.value || 'all';
+  const search    = ($('proj-search')?.value || '').trim().toLowerCase();
+  const showDone  = $('proj-show-done')?.checked ?? true;
   return projTasks.filter(t => {
     if (priority !== 'all' && t.priority !== priority) return false;
     if (assignee !== 'all' && t.assigneeId !== assignee) return false;
+    if (!showDone && isTaskDone(t)) return false;
+    if (search) {
+      const hay = [(t.title||''), (t.desc||''), (t.assigneeName||'')].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
     return true;
   });
 }
@@ -1761,19 +1772,7 @@ function renderProjectList(projectId) {
   const proj = projects[projectId];
   if (!proj) { container.innerHTML = ''; return; }
 
-  const search = ($('project-list-search')?.value || '').trim().toLowerCase();
-  const showDone = ($('project-list-show-done')?.checked ?? true);
-
   let projTasks = getFilteredTasks(projectId);
-  if (!showDone) projTasks = projTasks.filter(t => !isTaskDone(t));
-  if (search) {
-    projTasks = projTasks.filter(t => {
-      const title = (t.title || '').toLowerCase();
-      const desc  = (t.desc || '').toLowerCase();
-      const ass   = (t.assigneeName || '').toLowerCase();
-      return title.includes(search) || desc.includes(search) || ass.includes(search);
-    });
-  }
 
   const dir = listSortDir === 'asc' ? 1 : -1;
   const byDue = (a, b) => {
@@ -2259,7 +2258,7 @@ function renderProjectCalendar(projectId) {
   if (!proj) return;
   const y = projCalDate.getFullYear(), m = projCalDate.getMonth();
   $('proj-cal-title').textContent = projCalDate.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-  const projTasks = Object.values(tasks[projectId] || {});
+  const projTasks = getFilteredTasks(projectId);
   renderCalendarGrid('project-calendar-grid', y, m, projTasks, true);
 }
 
@@ -3523,14 +3522,11 @@ function setupEventListeners() {
   // Project view toggle (Kanban / Lista)
   $('project-view-kanban-btn')?.addEventListener('click', () => setProjectView('kanban'));
   $('project-view-list-btn')?.addEventListener('click', () => setProjectView('list'));
-  $('project-list-search')?.addEventListener('input', () => currentProjectId && renderProjectList(currentProjectId));
+  // search now handled by applyAllFilters
 
   $('project-list-show-done')?.addEventListener('change', () => {
     if (currentProjectId) {
-      if (!savedProjFilters[currentProjectId]) savedProjFilters[currentProjectId] = {};
-      savedProjFilters[currentProjectId].showDone = $('project-list-show-done').checked;
-      try { localStorage.setItem('mw_proj_filters', JSON.stringify(savedProjFilters)); } catch(e) {}
-      renderProjectList(currentProjectId);
+// showDone now handled by applyAllFilters
     }
   });
 
@@ -3658,8 +3654,27 @@ $('project-calendar-btn').addEventListener('click', () => {
   $('proj-cal-next').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() + 1); renderProjectCalendar(currentProjectId); });
 
   // Project filters
-  $('proj-filter-priority').addEventListener('change', () => { renderKanban(currentProjectId); renderProjectList(currentProjectId); });
-  $('proj-filter-assignee').addEventListener('change', () => { renderKanban(currentProjectId); renderProjectList(currentProjectId); });
+  // Universal filter listeners — apply to all views
+  function applyAllFilters() {
+    if (!currentProjectId) return;
+    // Save to persistent storage
+    if (!savedProjFilters[currentProjectId]) savedProjFilters[currentProjectId] = {};
+    savedProjFilters[currentProjectId].priority  = $('proj-filter-priority').value;
+    savedProjFilters[currentProjectId].assignee  = $('proj-filter-assignee').value;
+    savedProjFilters[currentProjectId].search    = $('proj-search').value;
+    savedProjFilters[currentProjectId].showDone  = $('proj-show-done').checked;
+    try { localStorage.setItem('mw_proj_filters', JSON.stringify(savedProjFilters)); } catch(e) {}
+    // Re-render active view
+    renderKanban(currentProjectId);
+    renderProjectList(currentProjectId);
+    if (!$('project-calendar-view').classList.contains('hidden')) renderProjectCalendar(currentProjectId);
+    if (!$('gantt-view').classList.contains('hidden')) renderGantt(currentProjectId);
+  }
+
+  $('proj-filter-priority').addEventListener('change', applyAllFilters);
+  $('proj-filter-assignee').addEventListener('change', applyAllFilters);
+  $('proj-search').addEventListener('input', applyAllFilters);
+  $('proj-show-done').addEventListener('change', applyAllFilters);
 
 
   // Members modal
