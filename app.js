@@ -957,7 +957,7 @@ function openProject(projectId) {
   $('project-view-kanban-btn')?.classList.toggle('active', currentProjectView !== 'list');
   $('project-view-list-btn')?.classList.toggle('active', currentProjectView === 'list');
   // Dopnij widok (ustawia klasy i pokazuje właściwy layout)
-  setProjectView(currentProjectView);
+  setProjectView(currentProjectView); // also calls toggleUniversalFilters(true)
 
   // Load saved filters
   if (savedProjFilters[projectId]) {
@@ -1731,6 +1731,19 @@ function renderCalendarGrid(containerId, y, m, taskList, clickable) {
 // ============================================================
 // PROJECT LIST VIEW (Asana-like)
 // ============================================================
+function hideAllProjectPanels() {
+  ['kanban-board','project-list-view','project-dashboard',
+   'project-calendar-view','gantt-view','project-chat-view',
+   'project-notes-view'].forEach(id => {
+    $(id)?.classList.add('hidden');
+  });
+}
+
+function toggleUniversalFilters(show) {
+  const bar = $('proj-universal-filters');
+  if (bar) bar.style.display = show ? '' : 'none';
+}
+
 function setActiveProjectTab(activeId) {
   ['project-view-kanban-btn','project-view-list-btn','project-calendar-btn','project-gantt-btn','project-chat-btn','project-notes-btn'].forEach(id => {
     $(id)?.classList.toggle('active', id === activeId);
@@ -1740,12 +1753,9 @@ function setActiveProjectTab(activeId) {
 function setProjectView(view) {
   currentProjectView = view;
   setActiveProjectTab(view === 'list' ? 'project-view-list-btn' : 'project-view-kanban-btn');
-  // Ukryj wszystkie inne widoki
-  $('project-chat-view').classList.add('hidden');
-  $('project-notes-view').classList.add('hidden');
-  $('project-calendar-view').classList.add('hidden');
-  $('gantt-view').classList.add('hidden');
+  hideAllProjectPanels();
   $('project-dashboard').classList.remove('hidden');
+  toggleUniversalFilters(true);
   if (view === 'list') {
     $('kanban-board').classList.add('hidden');
     $('project-list-view').classList.remove('hidden');
@@ -3823,24 +3833,18 @@ function setupEventListeners() {
   });
 
 $('project-calendar-btn').addEventListener('click', () => {
-    $('kanban-board').classList.add('hidden');
-    $('project-list-view').classList.add('hidden');
-    $('project-dashboard').classList.add('hidden');
-    $('gantt-view').classList.add('hidden');
-    $('project-chat-view').classList.add('hidden');
+    hideAllProjectPanels();
     $('project-calendar-view').classList.remove('hidden');
     setActiveProjectTab('project-calendar-btn');
+    toggleUniversalFilters(false);
     renderProjectCalendar(currentProjectId);
   });
   $('project-gantt-btn').addEventListener('click', () => {
-    $('kanban-board').classList.add('hidden');
-    $('project-list-view').classList.add('hidden');
-    $('project-dashboard').classList.add('hidden');
-    $('project-calendar-view').classList.add('hidden');
-    $('project-chat-view').classList.add('hidden');
+    hideAllProjectPanels();
     $('gantt-view').classList.remove('hidden');
     setActiveProjectTab('project-gantt-btn');
-    // Reset filter dropdowns
+    toggleUniversalFilters(false);
+    // Reset gantt filter dropdowns
     ['gantt-filter-status','gantt-filter-priority','gantt-filter-assignee'].forEach(id => {
       const el = $(id);
       if (el) { el.innerHTML = el.options[0].outerHTML; el.value = 'all'; }
@@ -3872,24 +3876,17 @@ $('project-calendar-btn').addEventListener('click', () => {
     setProjectView(currentProjectView);
   });
   $('project-chat-btn').addEventListener('click', () => {
-    $('kanban-board').classList.add('hidden');
-    $('project-list-view').classList.add('hidden');
-    $('project-dashboard').classList.add('hidden');
-    $('project-calendar-view').classList.add('hidden');
-    $('gantt-view').classList.add('hidden');
+    hideAllProjectPanels();
     $('project-chat-view').classList.remove('hidden');
     setActiveProjectTab('project-chat-btn');
+    toggleUniversalFilters(false);
     openProjectChat(currentProjectId);
   });
   $('project-notes-btn').addEventListener('click', () => {
-    $('kanban-board').classList.add('hidden');
-    $('project-list-view').classList.add('hidden');
-    $('project-dashboard').classList.add('hidden');
-    $('project-calendar-view').classList.add('hidden');
-    $('gantt-view').classList.add('hidden');
-    $('project-chat-view').classList.add('hidden');
+    hideAllProjectPanels();
     $('project-notes-view').classList.remove('hidden');
     setActiveProjectTab('project-notes-btn');
+    toggleUniversalFilters(false);
     renderProjectNotes(currentProjectId);
   });
   $('proj-cal-prev').addEventListener('click', () => { projCalDate.setMonth(projCalDate.getMonth() - 1); renderProjectCalendar(currentProjectId); });

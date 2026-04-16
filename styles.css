@@ -1209,7 +1209,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .auth-container { box-sizing:border-box; }
 .header-actions { flex-wrap:wrap; }
 
-#view-project { padding:0; display:flex; flex-direction:column; }
+#view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
 
 @media (max-width:768px) {
   .project-header-top { padding:.58rem .8rem .45rem; gap:.4rem; }
@@ -1227,8 +1227,8 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
-  height: calc(100vh - 110px);
 }
 
 /* Sub-tabs bar */
@@ -1660,7 +1660,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .gantt-view-wrap {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
   min-height: 0;
   overflow: hidden;
   background: var(--bg);
