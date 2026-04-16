@@ -791,6 +791,7 @@ tr:hover td { background:var(--bg-alt); }
 .toast { background:var(--text); color:var(--surface); padding:.6rem 1rem; border-radius:999px; font-size:.78rem; font-weight:700; box-shadow:var(--shadow-lg); animation:toastIn .2s ease; max-width:320px; }
 .toast.success { background:#059669; color:white; }
 .toast.error { background:#EF4444; color:white; }
+.toast.warning { background:#B79D94; color:white; }
 @keyframes toastIn { from{transform:translateX(16px);opacity:0} to{transform:translateX(0);opacity:1} }
 
 /* ===== SCROLLBAR ===== */

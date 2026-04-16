@@ -4007,6 +4007,7 @@ $('save-meeting-btn').addEventListener('click', async () => {
   };
   const btn = $('save-meeting-btn');
   btn.disabled = true; btn.textContent = 'Zapisuję...';
+  let meetingAttachError = false;
   try {
     let docId = editingMeetingId;
     if (!docId) {
@@ -4018,14 +4019,24 @@ $('save-meeting-btn').addEventListener('click', async () => {
     } else {
       await updateDoc(doc(db, 'projectMeetings', docId), data);
     }
-    // Upload new files
+    // Upload new files — osobny try/catch, żeby błąd pliku nie blokował zapisu
     if (pendingMeetingFiles.length) {
-      const existing = editingMeetingId ? ((projectMeetings[currentProjectId] || {})[docId]?.attachments || []) : [];
-      const uploaded = await uploadFilesToStorage(pendingMeetingFiles, `meetings/${docId}`);
-      await updateDoc(doc(db, 'projectMeetings', docId), { attachments: [...existing, ...uploaded] });
+      try {
+        const existing = editingMeetingId ? ((projectMeetings[currentProjectId] || {})[docId]?.attachments || []) : [];
+        const uploaded = await uploadFilesToStorage(pendingMeetingFiles, `meetings/${docId}`);
+        await updateDoc(doc(db, 'projectMeetings', docId), { attachments: [...existing, ...uploaded] });
+      } catch(uploadErr) {
+        console.warn('Błąd uploadu załącznika:', uploadErr);
+        meetingAttachError = true;
+      }
     }
     closeModal('meeting-modal');
     currentMeetingId = docId;
+    if (meetingAttachError) {
+      showToast('Spotkanie zapisano, ale nie udało się przesłać załączników. Sprawdź reguły Firebase Storage (CORS).', 'warning');
+    }
+  } catch(err) {
+    showToast('Błąd zapisu spotkania: ' + err.message, 'error');
   } finally {
     btn.disabled = false; btn.textContent = 'Zapisz spotkanie';
   }
@@ -4246,16 +4257,44 @@ function bindAttachDeleteBtns(docId, type, projectId) {
   });
 }
 
+// ── Cloudflare R2 upload ─────────────────────────────────────────────────
+// Ustaw po wdrożeniu Workera na Cloudflare:
+const CF_WORKER_URL = 'mw-storage.kontakt-e0f.workers.dev'; // ← zmień
+const CF_AUTH_TOKEN = 'Marcel155';                           // ← zmień
+
 async function uploadFilesToStorage(files, path2) {
   const results = [];
   for (const file of files) {
-    const sRef = ref(storage, `${path2}/${Date.now()}_${file.name}`);
-    await uploadBytes(sRef, file);
-    const url = await getDownloadURL(sRef);
-    results.push({ name: file.name, url, size: file.size });
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('path', path2);
+    const res = await fetch(`${CF_WORKER_URL}/upload`, {
+      method: 'POST',
+      headers: { 'X-Auth-Token': CF_AUTH_TOKEN },
+      body: formData,
+    });
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(`Błąd uploadu (${res.status}): ${msg}`);
+    }
+    const data = await res.json();
+    results.push({ name: data.name, url: data.url, size: data.size, key: data.key });
   }
   return results;
 }
+
+async function deleteFileFromStorage(key) {
+  if (!key) return;
+  try {
+    await fetch(`${CF_WORKER_URL}/delete?key=${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+      headers: { 'X-Auth-Token': CF_AUTH_TOKEN },
+    });
+  } catch (e) {
+    console.warn('Błąd usuwania pliku z R2:', e);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 async function uploadMeetingFiles(files, meetingId, projectId) {
   const progressEl = $(`meeting-attach-progress-${meetingId}`);
