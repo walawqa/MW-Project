@@ -1286,26 +1286,32 @@ function getCurrentChecklist() {
 
 function renderAttachments(attachments) {
   const list = $('attachments-list');
-  if (!attachments.length) {
+  if (!attachments || !attachments.length) {
     list.innerHTML = '<span style="font-size:.75rem;color:var(--text-light);">Brak załączników</span>';
     return;
   }
   list.innerHTML = attachments.map((a, i) => {
-    const isImage = a.type && a.type.startsWith('image/');
-    const icon = isImage ? '🖼' : '📎';
-    const sizeKb = a.size ? `<span style="font-size:.65rem;color:var(--text-light);"> (${Math.round(a.size/1024)}KB)</span>` : '';
+    const url = safeAttachUrl(a.url);
+    const isImg = isImageFile(a.name);
+    const sizeKb = a.size ? ` (${Math.round(a.size/1024)}KB)` : '';
     return `
-      <div class="attachment-chip" style="display:flex;align-items:center;gap:.4rem;padding:.3rem .55rem;background:var(--bg-alt);border:1px solid var(--border);border-radius:var(--radius-sm);max-width:100%;margin-bottom:.3rem;">
-        <span>${icon}</span>
-        <a href="${a.url}" target="_blank" download="${a.name}" style="color:var(--text);text-decoration:none;font-size:.75rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;" title="${a.name}">${a.name}</a>
-        ${sizeKb}
-        <button data-idx="${i}" class="attach-delete-btn" title="Usuń załącznik" style="background:none;border:none;cursor:pointer;color:var(--text-light);font-size:.78rem;padding:.1rem .25rem;border-radius:3px;line-height:1;flex-shrink:0;transition:color .15s;">✕</button>
+      <div class="pnotes-attach-item ${isImg ? 'has-preview' : ''}" data-ai="${i}">
+        ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
+        <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
+        <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}${sizeKb}</span>
+        <button class="pnotes-attach-preview-btn task-attach-preview" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd">👁</button>
+        <button class="pnotes-attach-download task-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
+        <button class="pnotes-attach-del task-attach-del" data-idx="${i}" title="Usuń">✕</button>
       </div>`;
   }).join('');
 
-  list.querySelectorAll('.attach-delete-btn').forEach(btn => {
-    btn.addEventListener('mouseenter', () => btn.style.color = '#EF4444');
-    btn.addEventListener('mouseleave', () => btn.style.color = 'var(--text-light)');
+  list.querySelectorAll('.task-attach-preview').forEach(btn => {
+    btn.addEventListener('click', () => openFilePreview(btn.dataset.url, btn.dataset.name));
+  });
+  list.querySelectorAll('.task-attach-download').forEach(btn => {
+    btn.addEventListener('click', () => downloadAttachment(btn.dataset.url, btn.dataset.name));
+  });
+  list.querySelectorAll('.task-attach-del').forEach(btn => {
     btn.addEventListener('click', () => deleteAttachment(parseInt(btn.dataset.idx)));
   });
 }
@@ -1635,29 +1641,19 @@ async function uploadAttachment(files) {
   const attachments = [...(task?.attachments || [])];
   const prevCount = attachments.length;
 
-  const MAX_SIZE = 1.5 * 1024 * 1024; // 1.5MB — limit Firestore na dokument
+  const btn = $('attachment-upload');
+  if (btn) btn.disabled = true;
 
-  for (const file of files) {
-    if (file.size > MAX_SIZE) {
-      showToast(`"${file.name}" za duży (max 1.5MB)`, 'error');
-      continue;
-    }
-    try {
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-      attachments.push({ name: file.name, url: dataUrl, type: file.type, size: file.size });
-    } catch (e) {
-      showToast(`Błąd odczytu: ${file.name}`, 'error');
-    }
+  try {
+    const uploaded = await uploadFilesToStorage(Array.from(files), `tasks/${taskId}`);
+    uploaded.forEach(f => attachments.push(f));
+  } catch(e) {
+    showToast('Błąd przesyłania: ' + e.message, 'error');
   }
 
-  // Reset — można dodać ten sam plik ponownie
+  // Reset
   const input = $('attachment-upload');
-  if (input) input.value = '';
+  if (input) { input.value = ''; input.disabled = false; }
 
   if (attachments.length === prevCount) return;
 
