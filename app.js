@@ -4259,7 +4259,7 @@ function bindAttachDeleteBtns(docId, type, projectId) {
 
 // ── Cloudflare R2 upload ─────────────────────────────────────────────────
 // Ustaw po wdrożeniu Workera na Cloudflare:
-const CF_WORKER_URL = 'mw-storage.kontakt-e0f.workers.dev'; // ← zmień
+const CF_WORKER_URL = 'https://mw-storage.kontakt-e0f.workers.dev'; // ← zmień
 const CF_AUTH_TOKEN = 'Marcel155';                           // ← zmień
 
 async function uploadFilesToStorage(files, path2) {
