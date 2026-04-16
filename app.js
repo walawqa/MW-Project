@@ -4030,10 +4030,16 @@ $('save-meeting-btn').addEventListener('click', async () => {
         meetingAttachError = true;
       }
     }
-    closeModal('meeting-modal');
     currentMeetingId = docId;
+    closeModal('meeting-modal');
+    // Odśwież listę i otwórz detal spotkania po krótkim opóźnieniu
+    // (żeby onSnapshot zdążył zaktualizować cache)
+    setTimeout(() => {
+      renderMeetingsList(currentProjectId);
+      openMeetingDetail(currentProjectId, docId);
+    }, 400);
     if (meetingAttachError) {
-      showToast('Spotkanie zapisano, ale nie udało się przesłać załączników. Sprawdź reguły Firebase Storage (CORS).', 'warning');
+      showToast('Spotkanie zapisano, ale nie udało się przesłać załączników.', 'warning');
     }
   } catch(err) {
     showToast('Błąd zapisu spotkania: ' + err.message, 'error');
@@ -4246,6 +4252,7 @@ function renderAttachList(attachments, docId, type, projectId) {
       ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
       <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
       <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}</span>
+      <a class="pnotes-attach-preview-btn" href="${url}" target="_blank" rel="noopener" title="Podgląd">👁</a>
       <button class="pnotes-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
       <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń">✕</span>
     </div>`;
