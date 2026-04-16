@@ -2266,170 +2266,226 @@ function renderProjectCalendar(projectId) {
 // ============================================================
 // OŚ CZASU (GANTT)
 // ============================================================
+// ── GANTT zoom state ─────────────────────────────────────────────────────
+let ganttZoom = 'week'; // 'week' | 'month' | 'quarter'
+const GANTT_DAY_W = { week: 40, month: 24, quarter: 14 };
+const GANTT_ROW_H = 40;
+const GANTT_SEC_H = 36;
+const GANTT_HDR_H = 56; // month row + day row
+const GANTT_LEFT_W = 220;
+const PRIO_COLORS = { high:'#EF4444', medium:'#F59E0B', low:'#10B981' };
+const PRIO_LABELS = { high:'Wysoki', medium:'Średni', low:'Niski', normal:'Normalny' };
+
 function renderGantt(projectId) {
+  if (!projectId) return;
   const proj = projects[projectId];
   const allTasks = Object.values(tasks[projectId] || {});
-  const projTasks = allTasks.filter(t => t.dueDate);
 
-  if (!projTasks.length) {
-    $('gantt-container').innerHTML = '<div class="empty-state"><p>Brak zadań z terminem — dodaj daty do zadań, aby zobaczyć oś czasu.</p></div>';
-    return;
+  // ── Populate filters ──────────────────────────────────────────────────
+  const statusSel = $('gantt-filter-status');
+  const assigneeSel = $('gantt-filter-assignee');
+  if (statusSel.options.length <= 1) {
+    (proj.columns || []).forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.id; o.textContent = c.name;
+      statusSel.appendChild(o);
+    });
+  }
+  const members = [...new Set(allTasks.flatMap(t => t.assignees || []))];
+  if (assigneeSel.options.length <= 1) {
+    members.forEach(m => {
+      const o = document.createElement('option');
+      o.value = m; o.textContent = m;
+      assigneeSel.appendChild(o);
+    });
   }
 
-  // --- Date range ---
+  // ── Apply filters ─────────────────────────────────────────────────────
+  const fStatus   = statusSel.value;
+  const fPriority = $('gantt-filter-priority').value;
+  const fAssignee = assigneeSel.value;
+
+  let projTasks = allTasks.filter(t => t.dueDate);
+  if (fStatus   !== 'all') projTasks = projTasks.filter(t => t.columnId === fStatus);
+  if (fPriority !== 'all') projTasks = projTasks.filter(t => t.priority === fPriority);
+  if (fAssignee !== 'all') projTasks = projTasks.filter(t => (t.assignees||[]).includes(fAssignee));
+
+  const ganttMain  = $('gantt-main');
+  const ganttEmpty = $('gantt-empty');
+
+  if (!projTasks.length) {
+    ganttMain.classList.add('hidden');
+    ganttEmpty.classList.remove('hidden');
+    return;
+  }
+  ganttMain.classList.remove('hidden');
+  ganttEmpty.classList.add('hidden');
+
+  // ── Date range ────────────────────────────────────────────────────────
   const today = new Date(); today.setHours(0,0,0,0);
-  projTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  projTasks.sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate));
   let rangeStart = new Date(Math.min(today.getTime(), new Date(projTasks[0].dueDate).getTime()));
-  let rangeEnd   = new Date(projTasks[projTasks.length - 1].dueDate);
-  // Pad: start on Monday, end on Sunday + buffer
-  rangeStart.setDate(rangeStart.getDate() - rangeStart.getDay() + (rangeStart.getDay() === 0 ? -6 : 1));
-  rangeEnd.setDate(rangeEnd.getDate() + 14);
+  let rangeEnd   = new Date(projTasks[projTasks.length-1].dueDate);
+  // Snap start to Monday
+  const dow = rangeStart.getDay();
+  rangeStart.setDate(rangeStart.getDate() - (dow === 0 ? 6 : dow - 1) - 7);
+  rangeEnd.setDate(rangeEnd.getDate() + 21);
   const totalDays = Math.ceil((rangeEnd - rangeStart) / 86400000);
+  const DAY_W = GANTT_DAY_W[ganttZoom];
 
-  // --- Build week columns for header ---
-  const DAY_W = 36; // px per day
-  const TASK_COL_W = 200; // px left panel
-
-  // Group tasks by kanban column (ordered)
-  const projCols = [...(proj.columns || [])].sort((a, b) => (a.order||0) - (b.order||0));
-  const colMap = {};
-  projCols.forEach(c => { colMap[c.id] = c.name; });
-  const tempSections = {};
-  projTasks.forEach(t => {
-    const sec = colMap[t.columnId] || 'Pozostałe';
-    if (!tempSections[sec]) tempSections[sec] = [];
-    tempSections[sec].push(t);
-  });
-  // Build sections in column order
+  // ── Group tasks by column ─────────────────────────────────────────────
+  const projCols = [...(proj.columns||[])].sort((a,b)=>(a.order||0)-(b.order||0));
+  const colMap = {}; projCols.forEach(c => { colMap[c.id] = c; });
   const sections = {};
-  projCols.forEach(c => {
-    if (tempSections[c.name]) sections[c.name] = tempSections[c.name];
+  projCols.forEach(c => { sections[c.id] = { name: c.name, tasks: [] }; });
+  projTasks.forEach(t => {
+    if (sections[t.columnId]) sections[t.columnId].tasks.push(t);
+    else {
+      if (!sections['__other']) sections['__other'] = { name: 'Pozostałe', tasks: [] };
+      sections['__other'].tasks.push(t);
+    }
   });
-  if (tempSections['Pozostałe']) sections['Pozostałe'] = tempSections['Pozostałe'];
+  const activeSections = Object.values(sections).filter(s => s.tasks.length);
 
-  // --- Header: months + weeks ---
-  let monthHeader = '';
-  let weekHeader = '';
-  // Month spans
+  // ── Build header (month + day rows) ───────────────────────────────────
+  const totalW = totalDays * DAY_W;
+  let monthCells = '';
   {
     let cur = new Date(rangeStart);
     while (cur < rangeEnd) {
-      const monthStart = new Date(cur);
-      const monthName = cur.toLocaleDateString('pl-PL', { month: 'long', year: 'numeric' });
-      // count days in this month within range
-      let days = 0;
-      const nextMonth = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
-      const endOfMonth = nextMonth < rangeEnd ? nextMonth : rangeEnd;
-      days = Math.ceil((endOfMonth - cur) / 86400000);
-      monthHeader += `<div class="gt-month-cell" style="width:${days * DAY_W}px">${monthName}</div>`;
+      const nextMonth = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+      const end = nextMonth < rangeEnd ? nextMonth : rangeEnd;
+      const days = Math.ceil((end - cur) / 86400000);
+      monthCells += `<div class="gt2-month-cell" style="width:${days*DAY_W}px">${cur.toLocaleDateString('pl-PL',{month:'long',year:'numeric'})}</div>`;
       cur = nextMonth;
     }
   }
-  // Week spans
-  {
-    let cur = new Date(rangeStart);
-    while (cur < rangeEnd) {
-      const weekStart = new Date(cur);
-      // days until Sunday (or range end)
-      const daysLeft = Math.ceil((rangeEnd - cur) / 86400000);
-      const daysInWeek = Math.min(7, daysLeft);
-      const label = weekStart.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
-      const isCurrentWeek = today >= cur && today < new Date(cur.getTime() + 7 * 86400000);
-      weekHeader += `<div class="gt-week-cell${isCurrentWeek ? ' current-week' : ''}" style="width:${daysInWeek * DAY_W}px">${label}</div>`;
-      cur.setDate(cur.getDate() + 7);
-    }
-  }
-
-  // Today line position
-  const todayOffset = Math.floor((today - rangeStart) / 86400000);
-  const todayLeft = todayOffset * DAY_W;
-
-  // --- Build day grid background columns (weekends) ---
-  let gridBg = '';
+  let dayCells = '';
   for (let i = 0; i < totalDays; i++) {
-    const d = new Date(rangeStart.getTime() + i * 86400000);
-    const dow = d.getDay();
-    if (dow === 0 || dow === 6) {
-      gridBg += `<div class="gt-weekend-col" style="left:${i * DAY_W}px;width:${DAY_W}px"></div>`;
+    const d = new Date(rangeStart.getTime() + i*86400000);
+    const isWeekend = d.getDay()===0 || d.getDay()===6;
+    const isToday   = d.getTime() === today.getTime();
+    const dayNum    = d.getDate();
+    const dayName   = d.toLocaleDateString('pl-PL',{weekday:'short'}).slice(0,2);
+    const cls = [isWeekend?'weekend':'', isToday?'today-hdr':''].filter(Boolean).join(' ');
+    if (ganttZoom === 'week') {
+      dayCells += `<div class="gt2-day-cell ${cls}" style="width:${DAY_W}px;height:28px;"><span>${dayNum}</span><span style="font-size:.55rem;opacity:.7">${dayName}</span></div>`;
+    } else if (ganttZoom === 'month') {
+      // Show number only on Mondays or 1st
+      const show = d.getDay()===1 || dayNum===1;
+      dayCells += `<div class="gt2-day-cell ${cls}" style="width:${DAY_W}px;height:28px;">${show?dayNum:''}</div>`;
+    } else {
+      // quarter — show week number on Mondays
+      const show = d.getDay()===1 || dayNum===1;
+      dayCells += `<div class="gt2-day-cell ${cls}" style="width:${DAY_W}px;height:28px;">${show&&dayNum===1?dayNum:''}</div>`;
     }
   }
 
-  // --- Build rows ---
-  const PRIORITY_COLORS = { high: '#EF4444', medium: '#F59E0B', low: '#10B981', normal: 'var(--accent)' };
-  let rows = '';
-  Object.entries(sections).forEach(([secName, secTasks]) => {
-    rows += `<div class="gt-section-row"><div class="gt-section-label">${secName}</div><div class="gt-section-timeline" style="width:${totalDays * DAY_W}px"></div></div>`;
-    secTasks.forEach(t => {
-      const due = new Date(t.dueDate); due.setHours(0,0,0,0);
-      // Use startDate if available, else same as due (milestone / 1-day)
-      const startDate = t.startDate ? new Date(t.startDate) : new Date(due.getTime() - 86400000);
-      startDate.setHours(0,0,0,0);
-      const barStart = Math.max(0, Math.floor((startDate - rangeStart) / 86400000));
-      const barEnd   = Math.max(barStart + 1, Math.ceil((due - rangeStart) / 86400000) + 1);
-      const barW = Math.max(DAY_W, (barEnd - barStart) * DAY_W);
-      const barLeft = barStart * DAY_W;
-      const over = isOverdue(t.dueDate) && t.status !== 'done';
-      const color = over ? '#EF4444' : (PRIORITY_COLORS[t.priority] || 'var(--accent)');
-      const statusDone = t.status === 'done';
-
-      rows += `
-        <div class="gt-row">
-          <div class="gt-task-label" title="${t.title}">${statusDone ? '✓ ' : ''}${t.title}</div>
-          <div class="gt-timeline-area" style="width:${totalDays * DAY_W}px;position:relative;">
-            <div class="gt-bar" style="left:${barLeft}px;width:${barW}px;background:${color};opacity:${statusDone ? 0.5 : 1};" title="${t.title}">
-              <span class="gt-bar-label">${t.title}</span>
-            </div>
-          </div>
-        </div>`;
+  // ── Build left labels ─────────────────────────────────────────────────
+  let leftRows = '';
+  activeSections.forEach(sec => {
+    leftRows += `<div class="gt2-section-lbl">${escHtml(sec.name)}</div>`;
+    sec.tasks.forEach(t => {
+      const prioColor = PRIO_COLORS[t.priority] || 'var(--text-light)';
+      const done = t.status === 'done' || isTaskDone(t);
+      leftRows += `<div class="gt2-task-lbl" data-tid="${t.id}" title="${escHtml(t.title)}">
+        <span class="gt2-prio-dot" style="background:${prioColor}"></span>
+        ${done ? '<span class="gt2-done-check">✓</span>' : ''}
+        <span style="${done?'text-decoration:line-through;opacity:.6':''}">${escHtml(t.title)}</span>
+      </div>`;
     });
   });
 
-  $('gantt-container').innerHTML = `
-    <div class="gt-wrap">
-      <div class="gt-header-row">
-        <div class="gt-corner" style="width:${TASK_COL_W}px"></div>
-        <div class="gt-header-timeline">
-          <div class="gt-month-row">${monthHeader}</div>
-          <div class="gt-week-row">${weekHeader}</div>
+  // ── Build grid rows + bars ────────────────────────────────────────────
+  const todayOffset = Math.floor((today - rangeStart)/86400000);
+  let gridRows = '';
+  let barRows  = '';
+
+  // Weekend shading columns
+  let weekendShades = '';
+  for (let i=0;i<totalDays;i++) {
+    const d = new Date(rangeStart.getTime()+i*86400000);
+    if (d.getDay()===0||d.getDay()===6) weekendShades += `<div class="gt2-col-shade" style="left:${i*DAY_W}px;width:${DAY_W}px"></div>`;
+  }
+
+  activeSections.forEach(sec => {
+    gridRows += `<div class="gt2-section-grid" style="width:${totalW}px"></div>`;
+    barRows  += `<div class="gt2-section-grid" style="width:${totalW}px"></div>`;
+    sec.tasks.forEach(t => {
+      const due = new Date(t.dueDate); due.setHours(0,0,0,0);
+      const start = t.startDate ? new Date(t.startDate) : null;
+      if (start) start.setHours(0,0,0,0);
+      const done = t.status==='done' || isTaskDone(t);
+      const over = !done && isOverdue(t.dueDate);
+      const color = over ? '#EF4444' : (PRIO_COLORS[t.priority]||'var(--accent)');
+
+      let barLeft, barW;
+      if (start && start < due) {
+        barLeft = Math.max(0, Math.floor((start - rangeStart)/86400000)) * DAY_W;
+        const barEnd = Math.ceil((due - rangeStart)/86400000) + 1;
+        barW = Math.max(DAY_W, (barEnd - Math.max(0,Math.floor((start-rangeStart)/86400000))) * DAY_W);
+      } else {
+        // milestone — diamond
+        const mOffset = Math.floor((due - rangeStart)/86400000);
+        barLeft = mOffset * DAY_W + DAY_W/2 - 7;
+        barW = 14;
+      }
+
+      gridRows += `<div class="gt2-task-row" style="width:${totalW}px"></div>`;
+      barRows  += `<div class="gt2-task-row" style="width:${totalW}px">
+        <div class="gt2-bar${done?' done':''}" style="left:${barLeft}px;width:${barW}px;background:${color}" data-tid="${t.id}" title="${escHtml(t.title)} — ${t.dueDate}">
+          <span class="gt2-bar-lbl">${barW > 40 ? escHtml(t.title) : ''}</span>
         </div>
-      </div>
-      <div class="gt-body">
-        <div class="gt-left-col" style="width:${TASK_COL_W}px">
-          ${Object.entries(sections).map(([secName, secTasks]) =>
-            `<div class="gt-section-left">${secName}</div>` +
-            secTasks.map(t => `<div class="gt-task-left" title="${t.title}">${t.status === 'done' ? '✓ ' : ''}${t.title}</div>`).join('')
-          ).join('')}
-        </div>
-        <div class="gt-right-col" style="overflow-x:auto;flex:1;position:relative;">
-          <div class="gt-grid" style="width:${totalDays * DAY_W}px;position:relative;">
-            ${gridBg}
-            ${today >= rangeStart && today < rangeEnd ? `<div class="gt-today-line" style="left:${todayLeft}px"></div>` : ''}
-            ${Object.entries(sections).map(([secName, secTasks]) =>
-              `<div class="gt-section-grid-row"></div>` +
-              secTasks.map(t => {
-                const due = new Date(t.dueDate); due.setHours(0,0,0,0);
-                const startDate = t.startDate ? new Date(t.startDate) : new Date(due.getTime() - 86400000);
-                startDate.setHours(0,0,0,0);
-                const barStart = Math.max(0, Math.floor((startDate - rangeStart) / 86400000));
-                const barEnd   = Math.max(barStart + 1, Math.ceil((due - rangeStart) / 86400000) + 1);
-                const barW = Math.max(DAY_W, (barEnd - barStart) * DAY_W);
-                const barLeft = barStart * DAY_W;
-                const over = isOverdue(t.dueDate) && t.status !== 'done';
-                const PRIORITY_COLORS2 = { high: '#EF4444', medium: '#F59E0B', low: '#10B981', normal: 'var(--accent)' };
-                const color = over ? '#EF4444' : (PRIORITY_COLORS2[t.priority] || 'var(--accent)');
-                const statusDone = t.status === 'done';
-                return `<div class="gt-grid-row">
-                  <div class="gt-bar" style="left:${barLeft}px;width:${barW}px;background:${color};opacity:${statusDone ? 0.5 : 1};" title="${t.title}">
-                    <span class="gt-bar-label">${t.title}</span>
-                  </div>
-                </div>`;
-              }).join('')
-            ).join('')}
-          </div>
-        </div>
-      </div>
+      </div>`;
+    });
+  });
+
+  // ── Inject HTML ───────────────────────────────────────────────────────
+  const hdrHeight = 56; // month(28) + day(28)
+  $('gantt-corner').style.height = hdrHeight + 'px';
+
+  $('gantt-timeline-header').innerHTML = `
+    <div class="gt2-header-inner" style="width:${totalW}px">
+      <div class="gt2-month-row">${monthCells}</div>
+      <div class="gt2-day-row">${dayCells}</div>
     </div>`;
+
+  $('gantt-left-rows').innerHTML = leftRows;
+
+  $('gantt-timeline-body').innerHTML = `
+    <div class="gt2-grid-wrap" style="width:${totalW}px;position:relative;">
+      ${weekendShades}
+      ${today >= rangeStart && today < rangeEnd ? `<div class="gt2-today-line" style="left:${todayOffset*DAY_W + DAY_W/2}px"></div>` : ''}
+      ${barRows}
+    </div>`;
+
+  // ── Sync scroll ───────────────────────────────────────────────────────
+  const bodyEl  = $('gantt-timeline-body');
+  const hdrEl   = $('gantt-timeline-header');
+  const leftEl  = $('gantt-left-rows');
+  bodyEl.onscroll = () => {
+    hdrEl.scrollLeft = bodyEl.scrollLeft;
+    leftEl.scrollTop = bodyEl.scrollTop;
+  };
+
+  // ── Click on bar/label → open task ───────────────────────────────────
+  $('gantt-timeline-body').querySelectorAll('[data-tid]').forEach(el => {
+    el.addEventListener('click', () => openTask(el.dataset.tid, projectId));
+  });
+  $('gantt-left-rows').querySelectorAll('[data-tid]').forEach(el => {
+    el.addEventListener('click', () => openTask(el.dataset.tid, projectId));
+  });
+
+  // ── Scroll to today ───────────────────────────────────────────────────
+  const scrollToToday = () => {
+    const todayPx = Math.max(0, todayOffset * DAY_W - bodyEl.clientWidth/2);
+    bodyEl.scrollLeft = todayPx;
+  };
+  $('gantt-today-btn').onclick = scrollToToday;
+  // Auto-scroll to today on first render
+  setTimeout(scrollToToday, 50);
 }
+
 
 // ============================================================
 // STATISTICS
@@ -3546,7 +3602,26 @@ $('project-calendar-btn').addEventListener('click', () => {
     $('project-chat-view').classList.add('hidden');
     $('gantt-view').classList.remove('hidden');
     setActiveProjectTab('project-gantt-btn');
+    // Reset filter dropdowns
+    ['gantt-filter-status','gantt-filter-priority','gantt-filter-assignee'].forEach(id => {
+      const el = $(id);
+      if (el) { el.innerHTML = el.options[0].outerHTML; el.value = 'all'; }
+    });
     renderGantt(currentProjectId);
+  });
+
+  // Gantt zoom buttons
+  document.querySelectorAll('.gantt-zoom-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ganttZoom = btn.dataset.zoom;
+      document.querySelectorAll('.gantt-zoom-btn').forEach(b => b.classList.toggle('active', b===btn));
+      renderGantt(currentProjectId);
+    });
+  });
+
+  // Gantt filters
+  ['gantt-filter-status','gantt-filter-priority','gantt-filter-assignee'].forEach(id => {
+    $(id)?.addEventListener('change', () => renderGantt(currentProjectId));
   });
   $('close-proj-cal').addEventListener('click', () => {
     $('project-calendar-view').classList.add('hidden');

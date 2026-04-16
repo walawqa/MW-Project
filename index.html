@@ -448,12 +448,46 @@
       </div>
 
       <!-- Gantt Chart -->
-      <div id="gantt-view" class="hidden" style="padding:1rem 1.25rem;">
-        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;">
-          <h3 style="font-size:.9rem;font-weight:600;flex:1;">Oś czasu</h3>
-          <button class="btn-secondary small" id="close-gantt">✕ Zamknij</button>
+      <div id="gantt-view" class="hidden gantt-view-wrap">
+        <!-- Toolbar -->
+        <div class="gantt-toolbar">
+          <span class="gantt-title">Oś czasu</span>
+          <div class="gantt-filters">
+            <select id="gantt-filter-status" class="gantt-select">
+              <option value="all">Wszystkie statusy</option>
+            </select>
+            <select id="gantt-filter-priority" class="gantt-select">
+              <option value="all">Wszystkie priorytety</option>
+              <option value="high">Wysoki</option>
+              <option value="medium">Średni</option>
+              <option value="low">Niski</option>
+            </select>
+            <select id="gantt-filter-assignee" class="gantt-select">
+              <option value="all">Wszyscy</option>
+            </select>
+          </div>
+          <div class="gantt-zoom-btns">
+            <button class="gantt-zoom-btn active" data-zoom="week">Tydzień</button>
+            <button class="gantt-zoom-btn" data-zoom="month">Miesiąc</button>
+            <button class="gantt-zoom-btn" data-zoom="quarter">Kwartał</button>
+          </div>
+          <button class="btn-secondary small" id="gantt-today-btn">📅 Dziś</button>
+          <button class="btn-secondary small" id="close-gantt">✕</button>
         </div>
-        <div id="gantt-container" class="gantt-container"></div>
+        <!-- Main gantt area -->
+        <div class="gantt-main" id="gantt-main">
+          <div class="gantt-left-panel" id="gantt-left-panel">
+            <div class="gantt-corner" id="gantt-corner"></div>
+            <div class="gantt-left-rows" id="gantt-left-rows"></div>
+          </div>
+          <div class="gantt-right-panel" id="gantt-right-panel">
+            <div class="gantt-timeline-header" id="gantt-timeline-header"></div>
+            <div class="gantt-timeline-body" id="gantt-timeline-body"></div>
+          </div>
+        </div>
+        <div id="gantt-empty" class="gantt-empty hidden">
+          <p>Brak zadań z terminem.<br>Dodaj daty do zadań, aby zobaczyć oś czasu.</p>
+        </div>
       </div>
 
       <!-- Project Chat -->
