@@ -4263,6 +4263,10 @@ function isPdfFile(name) {
   return /\.pdf$/i.test(name || '');
 }
 
+function isOfficeFile(name) {
+  return /\.(docx?|xlsx?|pptx?|odt|ods|odp|csv|txt|rtf)$/i.test(name || '');
+}
+
 function openFilePreview(url, name) {
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('file-preview-title');
@@ -4273,9 +4277,21 @@ function openFilePreview(url, name) {
   dlBtn.onclick = () => downloadAttachment(url, name);
 
   if (isImageFile(name)) {
+    // Podgląd obrazka — bezpośrednio
     body.innerHTML = `<img src="${url}" alt="${name}" />`;
   } else if (isPdfFile(name)) {
+    // Podgląd PDF — natywny iframe
     body.innerHTML = `<iframe src="${url}" title="${name}"></iframe>`;
+  } else if (isOfficeFile(name)) {
+    // Podgląd Word/Excel/PPT — przez Google Docs Viewer
+    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+    body.innerHTML = `
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;gap:.5rem;padding:.5rem;">
+        <div style="font-size:.72rem;color:var(--text-muted);text-align:center;padding:.3rem;">
+          Podgląd przez Google Docs Viewer — pierwsze ładowanie może chwilę zająć
+        </div>
+        <iframe src="${viewerUrl}" title="${name}" style="flex:1;border:none;border-radius:var(--radius-xs);min-height:400px;"></iframe>
+      </div>`;
   } else {
     body.innerHTML = `
       <div class="file-preview-nopreview">

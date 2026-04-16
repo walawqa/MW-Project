@@ -1282,7 +1282,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
 .pnotes-subtabs-actions { margin-left: auto; }
 
 /* Two-column layout */
-.pnotes-panel { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.pnotes-panel { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .pnotes-two-col {
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -1303,6 +1303,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   background: var(--bg);
 }
 
@@ -1339,6 +1340,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 .pnotes-meeting-detail-header {
@@ -1379,7 +1381,9 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
 
 .pnotes-meeting-body {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem 1.25rem;
   display: flex;
   flex-direction: column;
