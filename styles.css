@@ -1487,11 +1487,15 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
   font-weight: 600;
   color: var(--text);
 }
-.pnotes-attach-item a { color: var(--accent); text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pnotes-attach-item a:hover { text-decoration: underline; }
+.pnotes-attach-name { color: var(--text); font-size: .78rem; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pnotes-attach-icon { font-size: .9rem; flex-shrink: 0; }
-.pnotes-attach-del { margin-left: auto; cursor: pointer; color: var(--text-light); flex-shrink: 0; font-size: .7rem; transition: var(--transition); }
+.pnotes-attach-download { flex-shrink: 0; background: var(--accent-light); border: none; border-radius: var(--radius-xs); cursor: pointer; color: var(--accent); font-size: .72rem; padding: .15rem .4rem; transition: var(--transition); }
+.pnotes-attach-download:hover { background: var(--accent); color: #fff; }
+.pnotes-attach-del { cursor: pointer; color: var(--text-light); flex-shrink: 0; font-size: .7rem; transition: var(--transition); padding: .15rem .3rem; }
 .pnotes-attach-del:hover { color: #e53e3e; }
+.pnotes-attach-item.has-preview { flex-wrap: wrap; align-items: center; }
+.pnotes-attach-preview { width: 100%; margin-bottom: .3rem; }
+.pnotes-attach-preview img { max-width: 100%; max-height: 160px; border-radius: var(--radius-xs); object-fit: contain; border: 1px solid var(--border); cursor: zoom-in; }
 
 /* Note list items in project notes tab */
 .pnotes-note-item {

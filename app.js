@@ -4227,20 +4227,57 @@ function fileIcon(name) {
   return '📎';
 }
 
+function isImageFile(name) {
+  return /\.(png|jpe?g|gif|webp|svg)$/i.test(name || '');
+}
+
+function safeAttachUrl(url) {
+  if (!url) return '#';
+  return url.startsWith('http') ? url : `https://${url}`;
+}
+
 function renderAttachList(attachments, docId, type, projectId) {
   if (!attachments?.length) return '';
-  return attachments.map((a, i) => `
-    <div class="pnotes-attach-item" data-ai="${i}">
+  return attachments.map((a, i) => {
+    const url = safeAttachUrl(a.url);
+    const isImg = isImageFile(a.name);
+    return `
+    <div class="pnotes-attach-item ${isImg ? 'has-preview' : ''}" data-ai="${i}">
+      ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
       <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
-      <a href="${a.url}" target="_blank" rel="noopener">${escHtml(a.name)}</a>
+      <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}</span>
+      <button class="pnotes-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
       <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń">✕</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+async function downloadAttachment(url, name) {
+  try {
+    const res = await fetch(safeAttachUrl(url));
+    if (!res.ok) throw new Error('Błąd pobierania');
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  } catch(e) {
+    showToast('Nie udało się pobrać pliku: ' + e.message, 'error');
+  }
 }
 
 function bindAttachDeleteBtns(docId, type, projectId) {
   const listId = type === 'meeting' ? `meeting-attach-list-${docId}` : `pnote-attach-list-${docId}`;
   const listEl = $(listId);
   if (!listEl) return;
+  // Przycisk pobierania
+  listEl.querySelectorAll('.pnotes-attach-download').forEach(btn => {
+    btn.addEventListener('click', () => downloadAttachment(btn.dataset.url, btn.dataset.name));
+  });
+  // Przycisk usunięcia
   listEl.querySelectorAll('.pnotes-attach-del').forEach(btn => {
     btn.addEventListener('click', async () => {
       const idx = Number(btn.dataset.idx);
@@ -4259,8 +4296,8 @@ function bindAttachDeleteBtns(docId, type, projectId) {
 
 // ── Cloudflare R2 upload ─────────────────────────────────────────────────
 // Ustaw po wdrożeniu Workera na Cloudflare:
-const CF_WORKER_URL = 'https://mw-storage.kontakt-e0f.workers.dev'; // ← zmień
-const CF_AUTH_TOKEN = 'Marcel155';                           // ← zmień
+const CF_WORKER_URL = 'https://mw-storage.TWOJA-NAZWA.workers.dev'; // ← zmień
+const CF_AUTH_TOKEN = 'TWOJ-TAJNY-KLUCZ';                           // ← zmień
 
 async function uploadFilesToStorage(files, path2) {
   const results = [];
@@ -4278,7 +4315,9 @@ async function uploadFilesToStorage(files, path2) {
       throw new Error(`Błąd uploadu (${res.status}): ${msg}`);
     }
     const data = await res.json();
-    results.push({ name: data.name, url: data.url, size: data.size, key: data.key });
+    // Upewniamy się że URL ma https://
+    const safeUrl = data.url.startsWith('http') ? data.url : `https://${data.url}`;
+    results.push({ name: data.name, url: safeUrl, size: data.size, key: data.key });
   }
   return results;
 }
