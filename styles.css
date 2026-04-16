@@ -144,95 +144,65 @@ body {
 /* ===== INTRO ANIMATION ===== */
 #intro-overlay {
   position: fixed; inset: 0; z-index: 9999;
-  background: linear-gradient(135deg, #253D5B 0%, #67697C 100%);
+  background: #0a0a0a;
+  display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.intro-ground {
-  position: absolute;
-  bottom: calc(50% - 56px);
-  left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.2) 50%, transparent 100%);
+
+/* ── Netflix-style MW intro ── */
+.intro-netflix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .05em;
 }
-.intro-logo {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex; flex-direction: column; align-items: center; gap: .3rem;
-  z-index: 2;
-  animation: introLogoIn .6s ease .4s both;
-}
-.intro-logo-mw {
+
+.intro-letter {
   font-family: var(--font-heading);
-  font-size: 3.8rem; font-weight: 800;
-  color: #ffffff;
-  letter-spacing: -2px;
+  font-size: clamp(5rem, 22vw, 14rem);
+  font-weight: 900;
   line-height: 1;
+  color: #C6878F;
+  letter-spacing: -.04em;
+  display: inline-block;
+  animation: netflixZoom 1.6s cubic-bezier(.16,1,.3,1) forwards;
+  text-shadow:
+    0 0 80px rgba(198,135,143,.4),
+    0 0 160px rgba(198,135,143,.15);
 }
-.intro-logo-project {
-  font-size: .72rem;
-  color: rgba(255,255,255,.6);
-  letter-spacing: .45em;
-  text-transform: uppercase;
+
+#intro-m {
+  transform-origin: right center;
+  animation-delay: 0s;
 }
-@keyframes introLogoIn {
-  from { opacity: 0; transform: translate(-50%, calc(-50% + 10px)); }
-  to   { opacity: 1; transform: translate(-50%, -50%); }
+#intro-w {
+  transform-origin: left center;
+  animation-delay: .05s;
 }
-.walker-track {
-  position: absolute;
-  bottom: calc(50% - 55px);
-  left: 0; right: 0;
-  height: 110px;
-  pointer-events: none;
-  animation: walkAcross 3.6s cubic-bezier(.42,0,.58,1) .1s both;
+
+@keyframes netflixZoom {
+  0%   { opacity: 0; transform: scale(.4) translateY(8px); filter: blur(12px); }
+  35%  { opacity: 1; transform: scale(1.08) translateY(0); filter: blur(0); }
+  60%  { transform: scale(.98); }
+  80%  { transform: scale(1.01); }
+  100% { transform: scale(1); opacity: 1; }
 }
-@keyframes walkAcross {
-  0%   { transform: translateX(-90px); }
-  100% { transform: translateX(calc(100vw + 90px)); }
+
+/* Rozpad liter przy znikaniu — wyzwalany przez JS klasą .explode */
+#intro-overlay.explode .intro-letter {
+  animation: netflixExplode .55s cubic-bezier(.55,0,1,.45) forwards !important;
 }
-.walker { position: absolute; bottom: 0; left: 0; width: 50px; height: 110px; }
-.w-shadow { position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%); width: 36px; height: 7px; background: radial-gradient(ellipse, rgba(0,0,0,.3) 0%, transparent 80%); border-radius: 50%; }
-.w-head { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 21px; background: #e8c9a0; border-radius: 50% 50% 45% 45%; overflow: hidden; }
-.w-hair { position: absolute; top: 0; left: 0; right: 0; height: 8px; background: #2a1a08; border-radius: 50% 50% 0 0; }
-.w-neck { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 7px; height: 6px; background: #d4b48a; z-index: 3; }
-.w-body { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); width: 26px; height: 34px; background: #253D5B; border-radius: 2px 2px 4px 4px; z-index: 4; overflow: hidden; }
-.w-lapel-left { position: absolute; top: 0; left: 1px; width: 9px; height: 16px; background: #3A5A7A; clip-path: polygon(0 0, 100% 0, 40% 100%, 0 100%); }
-.w-lapel-right { position: absolute; top: 0; right: 1px; width: 9px; height: 16px; background: #3A5A7A; clip-path: polygon(0 0, 100% 0, 100% 100%, 60% 100%); }
-.w-tie { position: absolute; top: 1px; left: 50%; transform: translateX(-50%); width: 5px; height: 20px; background: #C6878F; clip-path: polygon(20% 0%, 80% 0%, 100% 75%, 50% 100%, 0% 75%); z-index: 5; }
-.w-button { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; background: rgba(255,255,255,.4); border-radius: 50%; }
-.w-arm { position: absolute; top: 24px; width: 9px; height: 26px; background: #253D5B; border-radius: 3px; transform-origin: top center; z-index: 3; }
-.w-arm.w-arm-left  { left: 5px;  animation: armL .48s ease-in-out infinite alternate; }
-.w-arm.w-arm-right { right: 5px; animation: armR .48s ease-in-out infinite alternate; z-index: 2; }
-@keyframes armL { from { transform: rotate(-32deg); } to { transform: rotate(28deg); } }
-@keyframes armR { from { transform: rotate(28deg);  } to { transform: rotate(-32deg); } }
-.w-forearm { position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%); width: 8px; height: 15px; background: #253D5B; border-radius: 3px; transform-origin: top center; }
-.w-forearm.w-forearm-left  { animation: forearmL .48s ease-in-out infinite alternate; }
-.w-forearm.w-forearm-right { animation: forearmR .48s ease-in-out infinite alternate; }
-@keyframes forearmL { from { transform: translateX(-50%) rotate(10deg);  } to { transform: translateX(-50%) rotate(-20deg); } }
-@keyframes forearmR { from { transform: translateX(-50%) rotate(-20deg); } to { transform: translateX(-50%) rotate(10deg);  } }
-.w-leg { position: absolute; bottom: 22px; width: 11px; height: 30px; background: #1A2B3F; border-radius: 3px; transform-origin: top center; z-index: 3; }
-.w-leg.w-leg-left  { left: 10px; animation: legL .48s ease-in-out infinite alternate; }
-.w-leg.w-leg-right { right: 10px; animation: legR .48s ease-in-out infinite alternate; }
-@keyframes legL { from { transform: rotate(-28deg); } to { transform: rotate(24deg); } }
-@keyframes legR { from { transform: rotate(24deg);  } to { transform: rotate(-28deg); } }
-.w-lower-leg { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); width: 10px; height: 20px; background: #1A2B3F; border-radius: 2px; transform-origin: top center; }
-.w-lower-left  { animation: lowerL .48s ease-in-out infinite alternate; }
-.w-lower-right { animation: lowerR .48s ease-in-out infinite alternate; }
-@keyframes lowerL { from { transform: translateX(-50%) rotate(18deg);  } to { transform: translateX(-50%) rotate(-8deg); } }
-@keyframes lowerR { from { transform: translateX(-50%) rotate(-8deg); } to { transform: translateX(-50%) rotate(18deg);  } }
-.w-shoe { position: absolute; bottom: -26px; left: 50%; transform: translateX(-50%); width: 16px; height: 7px; background: #1a1a2e; border-radius: 3px 4px 2px 2px; }
-.w-shoe-left  { animation: shoeL .48s ease-in-out infinite alternate; }
-.w-shoe-right { animation: shoeR .48s ease-in-out infinite alternate; }
-@keyframes shoeL { from { transform: translateX(-30%) rotate(12deg);  } to { transform: translateX(-70%) rotate(-5deg); } }
-@keyframes shoeR { from { transform: translateX(-70%) rotate(-5deg); } to { transform: translateX(-30%) rotate(12deg);  } }
-.w-briefcase { position: absolute; top: 47px; right: -2px; width: 15px; height: 11px; background: #FFD166; border: 1.5px solid #E5BA40; border-radius: 3px; z-index: 5; animation: briefcaseSwing .48s ease-in-out infinite alternate; transform-origin: top center; }
-@keyframes briefcaseSwing { from { transform: rotate(-20deg); } to { transform: rotate(12deg); } }
-.w-briefcase-handle { position: absolute; top: -5px; left: 50%; transform: translateX(-50%); width: 7px; height: 5px; border: 1.5px solid #E5BA40; border-bottom: none; border-radius: 3px 3px 0 0; }
-.w-briefcase-clasp { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 3px; background: #B8960A; border-radius: 1px; }
+#intro-overlay.explode #intro-m { animation-delay: 0s !important; }
+#intro-overlay.explode #intro-w { animation-delay: .04s !important; }
+
+@keyframes netflixExplode {
+  0%   { transform: scale(1); opacity: 1; filter: blur(0); }
+  100% { transform: scale(3.5); opacity: 0; filter: blur(16px); }
+}
 
 /* ===== SCREENS ===== */
 .screen { min-height: 100vh; }
+
 .hidden { display: none !important; }
 
 /* ===== AUTH ===== */

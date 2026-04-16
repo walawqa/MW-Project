@@ -220,13 +220,16 @@ function closeModal(id) {
 // ============================================================
 function runIntro() {
   const overlay = $('intro-overlay');
+  // Po 1.4s litery są na miejscu — dodaj klasę explode (rozpad)
   setTimeout(() => {
-    overlay.style.transition = 'opacity .5s ease';
-    overlay.style.opacity = '0';
+    overlay.classList.add('explode');
+    // Po animacji rozpadu (0.55s) ukryj overlay
     setTimeout(() => {
-      overlay.style.display = 'none';
+      overlay.style.transition = 'opacity .2s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
     }, 500);
-  }, 4000);
+  }, 1400);
 }
 
 // ============================================================
