@@ -4252,11 +4252,47 @@ function renderAttachList(attachments, docId, type, projectId) {
       ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
       <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
       <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}</span>
-      <a class="pnotes-attach-preview-btn" href="${url}" target="_blank" rel="noopener" title="Podgląd">👁</a>
+      <button class="pnotes-attach-preview-btn" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd">👁</button>
       <button class="pnotes-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
       <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń">✕</span>
     </div>`;
   }).join('');
+}
+
+function isPdfFile(name) {
+  return /\.pdf$/i.test(name || '');
+}
+
+function openFilePreview(url, name) {
+  const modal = document.getElementById('file-preview-modal');
+  const title = document.getElementById('file-preview-title');
+  const body = document.getElementById('file-preview-body');
+  const dlBtn = document.getElementById('file-preview-download');
+
+  title.textContent = name;
+  dlBtn.onclick = () => downloadAttachment(url, name);
+
+  if (isImageFile(name)) {
+    body.innerHTML = `<img src="${url}" alt="${name}" />`;
+  } else if (isPdfFile(name)) {
+    body.innerHTML = `<iframe src="${url}" title="${name}"></iframe>`;
+  } else {
+    body.innerHTML = `
+      <div class="file-preview-nopreview">
+        <div class="fp-icon">${fileIcon(name)}</div>
+        <p>Podgląd niedostępny dla tego formatu.</p>
+        <button class="btn-primary" onclick="downloadAttachment('${url}','${name}')">⬇ Pobierz plik</button>
+      </div>`;
+  }
+
+  modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeFilePreview() {
+  document.getElementById('file-preview-modal').classList.add('hidden');
+  document.getElementById('file-preview-body').innerHTML = '';
+  document.body.style.overflow = '';
 }
 
 async function downloadAttachment(url, name) {
@@ -4280,6 +4316,10 @@ function bindAttachDeleteBtns(docId, type, projectId) {
   const listId = type === 'meeting' ? `meeting-attach-list-${docId}` : `pnote-attach-list-${docId}`;
   const listEl = $(listId);
   if (!listEl) return;
+  // Przycisk podglądu
+  listEl.querySelectorAll('.pnotes-attach-preview-btn').forEach(btn => {
+    btn.addEventListener('click', () => openFilePreview(btn.dataset.url, btn.dataset.name));
+  });
   // Przycisk pobierania
   listEl.querySelectorAll('.pnotes-attach-download').forEach(btn => {
     btn.addEventListener('click', () => downloadAttachment(btn.dataset.url, btn.dataset.name));
@@ -4370,3 +4410,10 @@ async function uploadPNoteFiles(files, noteId, projectId) {
     if (progressEl) progressEl.innerHTML = `<span style="color:#e53e3e;font-size:.72rem;">Błąd przesyłania: ${e.message}</span>`;
   }
 }
+
+// ── Lightbox podglądu pliku ──────────────────────────────────────────────
+document.getElementById('file-preview-close')?.addEventListener('click', closeFilePreview);
+document.getElementById('file-preview-backdrop')?.addEventListener('click', closeFilePreview);
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeFilePreview();
+});
