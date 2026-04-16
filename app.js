@@ -913,8 +913,8 @@ function projectCard(p) {
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
       </div>
       <div class="project-card-footer">
-        <span>${p.deadline ? "<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> " + formatDate(p.deadline) : ''}</span>
-        ${overdue > 0 ? `<span style="color:#E74C3C;font-weight:500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${overdue} po terminie</span>` : ''}
+        <span>${p.deadline ? `<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' width='12' height='12'><rect x='3' y='4' width='18' height='18' rx='2'/><line x1='16' y1='2' x2='16' y2='6'/><line x1='8' y1='2' x2='8' y2='6'/><line x1='3' y1='10' x2='21' y2='10'/></svg> ` + formatDate(p.deadline) : ''}</span>
+        ${overdue > 0 ? `<span style="color:#E74C3C;font-weight:500"><svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' width='12' height='12'><path d='M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z'/><line x1='12' y1='9' x2='12' y2='13'/><line x1='12' y1='17' x2='12.01' y2='17'/></svg> ${overdue} po terminie</span>` : ''}
         <div class="members">
           ${(p.members || []).slice(0, 3).map(m => `<div class="member-chip">${getInitials(m.name)}</div>`).join('')}
           ${(p.members || []).length > 3 ? `<div class="member-chip">+${p.members.length - 3}</div>` : ''}
