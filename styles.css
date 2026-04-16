@@ -2345,3 +2345,141 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* ── Drag handle always visible on touch ─────────────────── */
   .list-drag-handle { opacity: .6 !important; }
 }
+
+/* ============================================================
+   MOBILE LIST — CARD STYLE (iOS native feel)
+   ============================================================ */
+.mlist-wrap {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 2rem;
+}
+.mlist-section { border-bottom: 6px solid var(--bg-alt); }
+.mlist-section:last-child { border-bottom: none; }
+.mlist-section-header {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .6rem .9rem .45rem;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  border-bottom: 1px solid var(--border);
+}
+.mlist-section-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mlist-section-name {
+  font-size: .82rem;
+  font-weight: 800;
+  color: var(--text);
+  flex: 1;
+}
+.mlist-section-count {
+  font-size: .68rem;
+  color: var(--text-muted);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  padding: .05rem .4rem;
+  border-radius: 99px;
+  font-weight: 700;
+}
+.mlist-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .75rem .9rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  min-height: 52px;
+  cursor: pointer;
+  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.mlist-row:active { background: var(--bg-alt); }
+.mlist-row.done { opacity: .6; }
+.mlist-check-wrap { flex-shrink: 0; }
+.mlist-checkbox {
+  width: 22px !important;
+  height: 22px !important;
+  min-width: 22px !important;
+  min-height: 22px !important;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border-radius: 50%;
+}
+.mlist-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .2rem; }
+.mlist-title {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mlist-title.done {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+.mlist-meta {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  flex-wrap: nowrap;
+}
+.mlist-prio-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.mlist-due {
+  font-size: .7rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.mlist-due.overdue { color: #EF4444; }
+.mlist-avatar {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  font-size: .6rem;
+  font-weight: 800;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mlist-drag {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-left: .3rem;
+}
+.mlist-drag .list-drag-handle {
+  opacity: .35;
+  font-size: 1rem;
+  cursor: grab;
+  color: var(--text-light);
+}
+.mlist-empty {
+  padding: .75rem .9rem;
+  font-size: .8rem;
+  color: var(--text-light);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+/* Row dragging on mobile */
+.mlist-row.list-row-dragging { opacity: .35; background: var(--accent-muted); }
+
+/* ── Hide project stat cards on mobile (empty space fix) ── */
+@media (max-width: 768px) {
+  #project-dashboard { display: none !important; }
+  .project-list-toolbar {
+    padding: .5rem .9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-header-bar { display: none; }
+}

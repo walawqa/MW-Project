@@ -1873,6 +1873,58 @@ function renderProjectList(projectId) {
     .map(c => `<label class="col-vis-item"><input type="checkbox" data-vis-col="${c.id}" ${c.visible ? 'checked' : ''}> ${c.label}</label>`)
     .join('');
 
+  // ── Mobile: render as cards instead of table ─────────────────────────
+  if (window.innerWidth <= 768) {
+    const mobileHtml = sections.map(sec => {
+      const c = sec.col;
+      const isCollapsed = collapsed.has(c.id);
+      const rows = sec.tasks.length
+        ? sec.tasks.map(t => {
+            const done = isTaskDone(t);
+            const over = isOverdue(t.dueDate) && !done;
+            const pr = t.priority || 'medium';
+            const prColor = { high:'#EF4444', medium:'#F59E0B', low:'#10B981' }[pr] || 'var(--text-light)';
+            const dueStr = t.dueDate ? formatDate(t.dueDate) : '';
+            const initials = t.assigneeName ? getInitials(t.assigneeName) : '';
+            const avatarColors = ['#6B7C5C','#4A90D9','#E67E22','#9B59B6','#1ABC9C','#E74C3C'];
+            let h = 0; for (let i=0;i<(t.assigneeName||'').length;i++) h=(t.assigneeName||'').charCodeAt(i)+((h<<5)-h);
+            const avColor = avatarColors[Math.abs(h)%avatarColors.length];
+            return `<div class="mlist-row ${done?'done':''}" data-id="${t.id}" data-section-col="${c.id}">
+              <div class="mlist-check-wrap">
+                <input class="mlist-checkbox list-checkbox" type="checkbox" data-id="${t.id}" ${done?'checked':''} />
+              </div>
+              <div class="mlist-content">
+                <span class="mlist-title ${done?'done':''}">${escHtml(t.title||'(bez tytułu)')}</span>
+                <div class="mlist-meta">
+                  <span class="mlist-prio-dot" style="background:${prColor}"></span>
+                  ${dueStr ? `<span class="mlist-due ${over?'overdue':''}">${over?'⚠ ':''}${dueStr}</span>` : ''}
+                  ${initials ? `<span class="mlist-avatar" style="background:${avColor}">${initials}</span>` : ''}
+                </div>
+              </div>
+              <div class="mlist-drag"><span class="list-drag-handle">⠿</span></div>
+            </div>`;
+          }).join('')
+        : `<div class="mlist-empty">Brak zadań w tej sekcji</div>`;
+      return `
+        <div class="mlist-section" data-col="${c.id}">
+          <div class="mlist-section-header" data-col="${c.id}">
+            <button class="section-collapse-btn" data-col="${c.id}" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;padding:.2rem;color:var(--text-muted);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" style="transition:transform .2s;transform:rotate(${isCollapsed?'-90deg':'0deg'})"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <span class="mlist-section-dot" style="background:${c.color||'#6B7C5C'}"></span>
+            <span class="mlist-section-name">${escHtml(c.name)}</span>
+            <span class="mlist-section-count">${sec.tasks.length}</span>
+          </div>
+          ${isCollapsed ? '' : rows}
+        </div>`;
+    }).join('');
+
+    container.innerHTML = `<div class="mlist-wrap">${mobileHtml}</div>`;
+    bindListTableInteractions(container, projectId, []);
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────
+
   container.innerHTML = `
     <div class="list-table-wrap">
       <div class="list-header-bar">
@@ -1910,6 +1962,23 @@ function renderProjectList(projectId) {
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
+  // ── Mobile card list interactions ────────────────────────────────────
+  container.querySelectorAll('.mlist-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.classList.contains('mlist-checkbox') || e.target.classList.contains('list-drag-handle')) return;
+      openTaskModal(row.dataset.id, projectId);
+    });
+  });
+  container.querySelectorAll('.mlist-checkbox').forEach(cb => {
+    cb.addEventListener('click', async e => {
+      e.stopPropagation();
+      const taskId = cb.dataset.id;
+      const newStatus = cb.checked ? 'done' : 'open';
+      await updateTask(taskId, { status: newStatus }, { action: newStatus === 'done' ? 'Oznaczono jako zakończone' : 'Przywrócono' });
+    });
+  });
+  // ─────────────────────────────────────────────────────────────────────
+
   // ── Drag & Drop między sekcjami ────────────────────────────────────────
   let listDragId   = null;  // id przeciąganego zadania
   let listDragFrom = null;  // colId sekcji źródłowej
