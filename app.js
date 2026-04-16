@@ -1729,8 +1729,12 @@ function setActiveProjectTab(activeId) {
 function setProjectView(view) {
   currentProjectView = view;
   setActiveProjectTab(view === 'list' ? 'project-view-list-btn' : 'project-view-kanban-btn');
+  // Ukryj wszystkie inne widoki
   $('project-chat-view').classList.add('hidden');
   $('project-notes-view').classList.add('hidden');
+  $('project-calendar-view').classList.add('hidden');
+  $('gantt-view').classList.add('hidden');
+  $('project-dashboard').classList.remove('hidden');
   if (view === 'list') {
     $('kanban-board').classList.add('hidden');
     $('project-list-view').classList.remove('hidden');
