@@ -307,7 +307,7 @@ body {
 .select-input.small { padding:.22rem .45rem; font-size:.72rem; }
 
 /* ===== MAIN LAYOUT ===== */
-#app { display:flex; min-height:100vh; }
+#app { display:flex; height:100dvh; overflow:hidden; }
 
 /* ===== SIDEBAR ===== */
 #sidebar {
@@ -402,12 +402,19 @@ body {
 /* ===== MAIN CONTENT ===== */
 #main-content {
   margin-left: var(--sidebar-w);
-  flex: 1; min-height: 100vh; background: var(--bg);
+  flex: 1;
+  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
   transition: margin-left .25s cubic-bezier(.4,0,.2,1);
 }
 #app.sidebar-collapsed #main-content { margin-left: var(--sidebar-collapsed-w); }
 
-.view { padding:0; animation:viewFadeIn .2s ease; }
+.view { padding:0; animation:viewFadeIn .2s ease; flex:1; min-height:0; display:flex; flex-direction:column; }
 @keyframes viewFadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 
 .view-header {
@@ -424,7 +431,7 @@ body {
 .header-actions { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
 .header-clock { font-size:1rem; color:var(--text-muted); font-weight:700; min-width:80px; text-align:right; }
 
-#view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { padding:1.1rem 1.5rem; }
+#view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { padding:1.1rem 1.5rem; display:block; overflow-y:auto; }
 
 /* ===== DASHBOARD ===== */
 .dashboard-grid { display:grid; grid-template-columns:1fr 1fr 260px; gap:1rem; }
@@ -1114,7 +1121,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
   #sidebar { display:none !important; }
   #sidebar-overlay { display:none !important; }
   #mobile-sidebar-toggle { display:none !important; }
-  #main-content { margin-left:0 !important; width:100%; min-height:var(--app-height); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; padding-bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + 20px) !important; }
+  #main-content { margin-left:0 !important; width:100%; height:var(--app-height) !important; min-height:0 !important; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; padding-bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + 20px) !important; }
   #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { padding:.75rem; padding-left:max(.75rem, var(--safe-left)); padding-right:max(.75rem, var(--safe-right)); }
   #auth-screen { align-items:flex-start; padding:calc(var(--safe-top) + 1.5rem) 1rem calc(var(--safe-bottom) + 1rem); overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .auth-container { width:100%; max-width:100%; box-shadow:none; border-left:none; border-right:none; margin:auto 0; }
@@ -1228,6 +1235,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  height: 0;
   overflow: hidden;
 }
 
@@ -1662,6 +1670,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  height: 0; /* forces flex to constrain, not expand */
   overflow: hidden;
   background: var(--bg);
 }
