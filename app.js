@@ -191,7 +191,7 @@ function isTaskDone(t) {
 function priorityRank(p){return ({high:0,medium:1,low:2}[p] ?? 2);} 
 
 function getPriorityLabel(p) {
-  return { high: '🔴 Wysoki', medium: '🟡 Średni', low: '🟢 Niski' }[p] || '🟢 Niski';
+  return { high: 'Wysoki', medium: 'Średni', low: 'Niski' }[p] || 'Niski';
 }
 function getInitials(name) {
   if (!name) return 'U';
@@ -255,7 +255,7 @@ async function register() {
     await setDoc(doc(db, 'users', cred.user.uid), {
       name, email, createdAt: serverTimestamp()
     });
-    showToast('Konto utworzone! Witaj 👋', 'success');
+    showToast('Konto utworzone!', 'success');
   } catch (e) {
     showToast(e.message, 'error');
   }
@@ -733,8 +733,8 @@ function renderDashboardTasks() {
     });
   };
 
-  renderList('upcoming-list', upcoming, 'Brak nadchodzących zadań 🎉');
-  renderList('overdue-list', overdue, 'Brak zaległych zadań ✅');
+  renderList('upcoming-list', upcoming, 'Brak nadchodzących zadań');
+  renderList('overdue-list', overdue, 'Brak zaległych zadań');
   renderList('done-list', done, 'Brak ukończonych zadań');
 }
 
@@ -894,7 +894,7 @@ function projectCard(p) {
       <div class="project-card-header">
         <div class="project-card-title">${p.name}</div>
         <div class="project-card-menu">
-          <button class="btn-icon proj-menu-btn">⋯</button>
+          <button class="btn-icon proj-menu-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button>
           <div class="project-dropdown hidden">
             <button class="project-dropdown-item proj-edit-btn" data-id="${p.id}">Edytuj</button>
             ${p.archived
@@ -913,8 +913,8 @@ function projectCard(p) {
         <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
       </div>
       <div class="project-card-footer">
-        <span>${p.deadline ? '📅 ' + formatDate(p.deadline) : ''}</span>
-        ${overdue > 0 ? `<span style="color:#E74C3C;font-weight:500">⚠️ ${overdue} po terminie</span>` : ''}
+        <span>${p.deadline ? "<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> " + formatDate(p.deadline) : ''}</span>
+        ${overdue > 0 ? `<span style="color:#E74C3C;font-weight:500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ${overdue} po terminie</span>` : ''}
         <div class="members">
           ${(p.members || []).slice(0, 3).map(m => `<div class="member-chip">${getInitials(m.name)}</div>`).join('')}
           ${(p.members || []).length > 3 ? `<div class="member-chip">+${p.members.length - 3}</div>` : ''}
@@ -1034,8 +1034,8 @@ function renderKanban(projectId) {
           <span class="column-title">${col.name}</span>
           <span class="column-count">${colTasks.length}</span>
           <div class="column-actions">
-            <button class="btn-icon edit-col-btn" data-col-id="${col.id}" title="Edytuj">✏️</button>
-            <button class="btn-icon delete-col-btn" data-col-id="${col.id}" title="Usuń">🗑</button>
+            <button class="btn-icon edit-col-btn" data-col-id="${col.id}" title="Edytuj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+            <button class="btn-icon delete-col-btn" data-col-id="${col.id}" title="Usuń">Usuń</button>
           </div>
         </div>
         <div class="column-tasks" data-col-id="${col.id}">
@@ -1112,8 +1112,8 @@ function taskCard(t) {
     <div class="task-card ${doneTask ? 'done' : ''}" draggable="true" data-id="${t.id}" data-priority="${t.priority || 'medium'}">
       <div class="task-card-title">${t.title}</div>
       <div class="task-card-meta">
-        ${t.dueDate ? `<span class="task-due ${over ? 'overdue' : ''}">📅 ${formatDate(t.dueDate)}</span>` : ''}
-        ${t.priority === 'high' ? '<span style="font-size:.72rem;color:#E74C3C">🔴 Wysoki</span>' : ''}
+        ${t.dueDate ? `<span class="task-due ${over ? 'overdue' : ''}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${formatDate(t.dueDate)}</span>` : ''}
+        ${t.priority === 'high' ? '<span class="task-card-prio-high">Wysoki</span>' : ''}
         ${t.assigneeName ? `<div class="task-card-assignee">${getInitials(t.assigneeName)}</div>` : ''}
         ${doneTask ? `<span class="task-done-badge"> Zakończone</span>` : ''}
       </div>
@@ -1253,7 +1253,7 @@ function renderChecklist(items) {
     <div class="checklist-item" data-idx="${idx}">
       <input type="checkbox" ${item.done ? 'checked' : ''} class="checklist-check" data-idx="${idx}" />
       <input class="checklist-item-text ${item.done ? 'done' : ''}" value="${item.text || ''}" data-idx="${idx}" />
-      <button class="btn-icon checklist-delete" data-idx="${idx}" style="font-size:.75rem">✕</button>
+      <button class="btn-icon checklist-delete" data-idx="${idx}" style="font-size:.75rem">Usuń</button>
     </div>
   `).join('');
 
@@ -1299,8 +1299,8 @@ function renderAttachments(attachments) {
         ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
         <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
         <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}${sizeKb}</span>
-        <button class="pnotes-attach-preview-btn task-attach-preview" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd">👁</button>
-        <button class="pnotes-attach-download task-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
+        <button class="pnotes-attach-preview-btn task-attach-preview" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button class="pnotes-attach-download task-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="pnotes-attach-del task-attach-del" data-idx="${i}" title="Usuń">✕</button>
       </div>`;
   }).join('');
@@ -1480,7 +1480,7 @@ async function autoSaveTask() {
 
   try {
     await updateDoc(doc(db, 'tasks', taskId), updates);
-    setAutosaveIndicator('✓ Zapisano', '#059669');
+    setAutosaveIndicator('Zapisano', '#059669');
     setTimeout(() => setAutosaveIndicator('', ''), 2000);
   } catch (e) {
     setAutosaveIndicator('Błąd zapisu', '#EF4444');
@@ -1893,7 +1893,7 @@ function renderProjectList(projectId) {
                 <span class="mlist-title ${done?'done':''}">${escHtml(t.title||'(bez tytułu)')}</span>
                 <div class="mlist-meta">
                   <span class="mlist-prio-dot" style="background:${prColor}"></span>
-                  ${dueStr ? `<span class="mlist-due ${over?'overdue':''}">${over?'⚠ ':''}${dueStr}</span>` : ''}
+                  ${dueStr ? `<span class="mlist-due ${over?'overdue':''}">${over ? '' : ''}${dueStr}</span>` : ''}
                   ${initials ? `<span class="mlist-avatar" style="background:${avColor}">${initials}</span>` : ''}
                 </div>
               </div>
@@ -2631,7 +2631,7 @@ function renderGantt(projectId) {
       const done = t.status === 'done' || isTaskDone(t);
       leftRows += `<div class="gt2-task-lbl" data-tid="${t.id}" title="${escHtml(t.title)}">
         <span class="gt2-prio-dot" style="background:${prioColor}"></span>
-        ${done ? '<span class="gt2-done-check">✓</span>' : ''}
+        ${done ? '<span class="gt2-done-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="20 6 9 17 4 12"/></svg></span>' : ''}
         <span style="${done?'text-decoration:line-through;opacity:.6':''}">${escHtml(t.title)}</span>
       </div>`;
     });
@@ -3002,7 +3002,7 @@ function renderInbox() {
   if (!items.length) {
     list.innerHTML = `<div class="empty-state">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-      <p>Skrzynka jest pusta 🎉</p>
+      <p>Skrzynka jest pusta</p>
     </div>`;
     return;
   }
@@ -3235,11 +3235,11 @@ function renderMembersList(projectId) {
     (proj?.members || []).some(m => m.uid === currentUser.uid && m.role === 'owner');
 
   list.innerHTML = (proj?.members || []).map(m => {
-    const roleLabel = m.role === 'owner' ? '👑 Właściciel' : 'Członek';
+    const roleLabel = m.role === 'owner' ? 'Właściciel' : 'Członek';
 
     // Remove button: only owner sees it, and only for other members (not self)
     const removeBtn = isOwner && m.uid !== currentUser.uid
-      ? `<button class="member-remove" data-uid="${m.uid}" title="Usuń członka">✕</button>`
+      ? `<button class="member-remove" data-uid="${m.uid}" title="Usuń członka">Usuń</button>`
       : '';
 
     return `
@@ -4295,7 +4295,7 @@ function renderMeetingsList(projectId) {
     const dateStr = m.date ? formatMeetingDate(m.date, m.time) : '';
     return `<div class="pnotes-meeting-item ${currentMeetingId === m.id ? 'active' : ''}" data-id="${m.id}">
       <div class="pnotes-meeting-item-title">${escHtml(m.title || 'Bez tytułu')}</div>
-      ${dateStr ? `<div class="pnotes-meeting-item-date">📅 ${dateStr}</div>` : ''}
+      ${dateStr ? `<div class="pnotes-meeting-item-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${dateStr}</div>` : ''}
       <div class="pnotes-meeting-item-preview">${escHtml((m.description || '').slice(0, 60))}</div>
     </div>`;
   }).join('');
@@ -4341,13 +4341,13 @@ function openMeetingDetail(projectId, meetingId) {
         <div style="flex:1;min-width:0;">
           <div class="pnotes-meeting-detail-title">${escHtml(m.title || 'Bez tytułu')}</div>
           <div class="pnotes-meeting-meta">
-            ${dateStr ? `<span class="pnotes-meta-chip date">📅 ${dateStr}</span>` : ''}
-            ${m.participants ? `<span class="pnotes-meta-chip people">👥 ${escHtml(m.participants)}</span>` : ''}
+            ${dateStr ? `<span class="pnotes-meta-chip date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${dateStr}</span>` : ''}
+            ${m.participants ? `<span class="pnotes-meta-chip people"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${escHtml(m.participants)}</span>` : ''}
           </div>
         </div>
         <div class="pnotes-detail-actions">
-          <button class="btn-secondary small" id="edit-meeting-btn">✏️ Edytuj</button>
-          <button class="btn-danger small" id="delete-meeting-btn">🗑</button>
+          <button class="btn-secondary small" id="edit-meeting-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edytuj</button>
+          <button class="btn-danger small" id="delete-meeting-btn">Usuń</button>
         </div>
       </div>
       <div class="pnotes-meeting-body">
@@ -4437,7 +4437,7 @@ function openMeetingModal(meetingId, projectId) {
   // Show existing attachments if editing
   if (m?.attachments?.length) {
     $('meeting-file-list').innerHTML = m.attachments.map(a =>
-      `<span class="file-chip">📎 ${escHtml(a.name)}</span>`
+      `<span class="file-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${escHtml(a.name)}</span>`
     ).join('');
   }
   openModal('meeting-modal');
@@ -4570,7 +4570,7 @@ function openPNoteEditor(projectId, noteId) {
       <div class="pnotes-note-editor-header">
         <input class="pnotes-note-title-edit" id="pnote-title-edit" value="${escHtml(n.title || '')}" placeholder="Tytuł notatki..." />
         <span class="pnotes-note-item-cat ${n.category || 'general'}" style="flex-shrink:0;">${catLabels[n.category] || 'Ogólna'}</span>
-        <button class="btn-danger small" id="delete-pnote-btn">🗑</button>
+        <button class="btn-danger small" id="delete-pnote-btn">Usuń</button>
       </div>
       <div class="pnotes-note-body-wrap">
         <div class="pnotes-note-toolbar" id="pnote-toolbar">
@@ -4693,13 +4693,13 @@ function bindNoteToolbar(toolbarId, bodyId) {
 // ---- FILE UTILITIES ----
 function fileIcon(name) {
   const ext = name.split('.').pop().toLowerCase();
-  if (['pdf'].includes(ext)) return '📄';
-  if (['doc','docx'].includes(ext)) return '📝';
-  if (['xls','xlsx'].includes(ext)) return '📊';
-  if (['ppt','pptx'].includes(ext)) return '📋';
-  if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '🖼️';
-  if (['zip','rar'].includes(ext)) return '🗜️';
-  return '📎';
+  if (['pdf'].includes(ext)) return '<span class="ftype-badge ftype-pdf">PDF</span>';
+  if (['doc','docx'].includes(ext)) return '<span class="ftype-badge ftype-doc">DOC</span>';
+  if (['xls','xlsx'].includes(ext)) return '<span class="ftype-badge ftype-xls">XLS</span>';
+  if (['ppt','pptx'].includes(ext)) return '<span class="ftype-badge ftype-ppt">PPT</span>';
+  if (['png','jpg','jpeg','gif','webp'].includes(ext)) return '<span class="ftype-badge ftype-img">IMG</span>';
+  if (['zip','rar'].includes(ext)) return '<span class="ftype-badge ftype-zip">ZIP</span>';
+  return '<span class="ftype-badge">FILE</span>';
 }
 
 function isImageFile(name) {
@@ -4721,9 +4721,9 @@ function renderAttachList(attachments, docId, type, projectId) {
       ${isImg ? `<div class="pnotes-attach-preview"><img src="${url}" alt="${escHtml(a.name)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>` : ''}
       <span class="pnotes-attach-icon">${fileIcon(a.name)}</span>
       <span class="pnotes-attach-name" title="${escHtml(a.name)}">${escHtml(a.name)}</span>
-      <button class="pnotes-attach-preview-btn" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd">👁</button>
-      <button class="pnotes-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz">⬇</button>
-      <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń">✕</span>
+      <button class="pnotes-attach-preview-btn" data-url="${url}" data-name="${escHtml(a.name)}" title="Podgląd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button class="pnotes-attach-download" data-url="${url}" data-name="${escHtml(a.name)}" title="Pobierz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+      <span class="pnotes-attach-del" data-idx="${i}" data-docid="${docId}" data-type="${type}" data-projid="${projectId}" title="Usuń"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
     </div>`;
   }).join('');
 }
@@ -4766,7 +4766,7 @@ function openFilePreview(url, name) {
       <div class="file-preview-nopreview">
         <div class="fp-icon">${fileIcon(name)}</div>
         <p>Podgląd niedostępny dla tego formatu.</p>
-        <button class="btn-primary" onclick="downloadAttachment('${url}','${name}')">⬇ Pobierz plik</button>
+        <button class="btn-primary" onclick="downloadAttachment('${url}','${name}')">Pobierz plik</button>
       </div>`;
   }
 

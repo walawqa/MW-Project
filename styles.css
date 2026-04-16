@@ -2492,3 +2492,44 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   }
   .list-header-bar { display: none; }
 }
+
+/* ===== FILE TYPE BADGES (zamiast emoji) ===== */
+.ftype-badge {
+  display: inline-block;
+  font-size: .58rem;
+  font-weight: 800;
+  padding: .1rem .3rem;
+  border-radius: 3px;
+  letter-spacing: .03em;
+  background: var(--bg-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.ftype-pdf  { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.ftype-doc  { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
+.ftype-xls  { background: #dcfce7; color: #166534; border-color: #86efac; }
+.ftype-ppt  { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
+.ftype-img  { background: #f3e8ff; color: #6b21a8; border-color: #c4b5fd; }
+.ftype-zip  { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+
+/* Task card priority badge */
+.task-card-prio-high {
+  display: inline-block;
+  font-size: .65rem;
+  font-weight: 700;
+  color: #991b1b;
+  background: #fee2e2;
+  padding: .1rem .4rem;
+  border-radius: 3px;
+}
+
+/* Gantt done check */
+.gt2-done-check { color: #10B981; display: inline-flex; align-items: center; }
+
+/* Mobile project buttons - text instead of emoji */
+@media (max-width: 768px) {
+  #project-members-btn { font-size: .72rem !important; width: auto !important; padding: .25rem .55rem !important; border-radius: var(--radius-xs) !important; }
+  #project-edit-btn    { font-size: .72rem !important; width: auto !important; padding: .25rem .55rem !important; border-radius: var(--radius-xs) !important; }
+}
