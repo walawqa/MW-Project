@@ -2000,6 +2000,86 @@ function bindListTableInteractions(container, projectId, listCols) {
   container.querySelectorAll('.list-drag-handle').forEach(el => {
     el.addEventListener('mousedown', e => e.stopPropagation());
   });
+
+  // ── Touch DnD dla iOS (HTML5 drag nie działa na touch) ───────────────
+  const isTouchDevice = () => window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  if (isTouchDevice()) {
+    let touchDragId = null, touchDragFrom = null, touchClone = null, touchIndicator = null;
+
+    function removeTouchArtifacts() {
+      touchClone?.remove(); touchClone = null;
+      touchIndicator?.remove(); touchIndicator = null;
+      container.querySelectorAll('.list-row-dragging').forEach(r => r.classList.remove('list-row-dragging'));
+      container.querySelectorAll('.list-section-drop-target').forEach(r => r.classList.remove('list-section-drop-target'));
+      touchDragId = null; touchDragFrom = null;
+    }
+
+    container.querySelectorAll('.list-drag-handle').forEach(handle => {
+      handle.addEventListener('touchstart', e => {
+        const tr = handle.closest('.list-row');
+        if (!tr) return;
+        touchDragId = tr.dataset.id;
+        touchDragFrom = tr.dataset.sectionCol;
+        tr.classList.add('list-row-dragging');
+        // Klonuj wiersz jako drag-ghost
+        const rect = tr.getBoundingClientRect();
+        touchClone = tr.cloneNode(true);
+        touchClone.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;opacity:.8;pointer-events:none;z-index:9999;background:var(--surface);box-shadow:0 4px 20px rgba(0,0,0,.18);border-radius:8px;`;
+        document.body.appendChild(touchClone);
+        e.preventDefault();
+      }, { passive: false });
+
+      handle.addEventListener('touchmove', e => {
+        if (!touchDragId || !touchClone) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        touchClone.style.top = (t.clientY - 20) + 'px';
+        touchClone.style.left = touchClone.style.left;
+        // Znajdź element pod palcem
+        touchClone.style.display = 'none';
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        touchClone.style.display = '';
+        if (!el) return;
+        // Wyczyść poprzednie wskaźniki
+        container.querySelectorAll('.list-section-drop-target').forEach(r => r.classList.remove('list-section-drop-target'));
+        touchIndicator?.remove(); touchIndicator = null;
+        // Sprawdź na co najeżdżamy
+        const targetRow = el.closest('.list-row');
+        const targetSec = el.closest('.list-section-row');
+        if (targetRow && targetRow.dataset.id !== touchDragId) {
+          touchIndicator = document.createElement('tr');
+          touchIndicator.className = 'list-drop-indicator';
+          touchIndicator.innerHTML = `<td colspan="99" style="padding:0;height:3px;background:var(--accent);"></td>`;
+          targetRow.parentNode.insertBefore(touchIndicator, targetRow);
+        } else if (targetSec) {
+          targetSec.classList.add('list-section-drop-target');
+        }
+      }, { passive: false });
+
+      handle.addEventListener('touchend', async e => {
+        if (!touchDragId) return;
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        touchClone.style.display = 'none';
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        touchClone.style.display = '';
+        if (el) {
+          const targetRow = el.closest('.list-row');
+          const targetSec = el.closest('.list-section-row');
+          let targetColId = null;
+          if (targetRow && targetRow.dataset.id !== touchDragId) targetColId = targetRow.dataset.sectionCol;
+          else if (targetSec) targetColId = targetSec.dataset.col;
+          if (targetColId && targetColId !== touchDragFrom) {
+            const col = projects[currentProjectId]?.columns?.find(c => c.id === targetColId);
+            await updateTask(touchDragId, { columnId: targetColId }, { action: `Przeniesiono do sekcji "${col?.name || targetColId}"` });
+          }
+        }
+        removeTouchArtifacts();
+      }, { passive: false });
+
+      handle.addEventListener('touchcancel', removeTouchArtifacts, { passive: true });
+    });
+  }
   // ─────────────────────────────────────────────────────────────────────
 
   // Collapse toggle
@@ -3888,7 +3968,52 @@ $('project-calendar-btn').addEventListener('click', () => {
 // ============================================================
 // INIT
 // ============================================================
+// ============================================================
+// iOS / MOBILE INIT
+// ============================================================
+function initMobile() {
+  // 1. Dynamiczny --app-height (naprawia iOS 100vh bug z paskiem URL)
+  function updateAppHeight() {
+    const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+  }
+  updateAppHeight();
+  window.addEventListener('resize', updateAppHeight, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      updateAppHeight();
+      // Wykrywanie klawiatury
+      const keyboardH = window.innerHeight - window.visualViewport.height;
+      const kh = Math.max(0, keyboardH);
+      document.documentElement.style.setProperty('--keyboard-h', kh + 'px');
+      document.body.classList.toggle('keyboard-open', kh > 150);
+    }, { passive: true });
+    window.visualViewport.addEventListener('scroll', updateAppHeight, { passive: true });
+  }
+
+  // 2. Wykryj PWA standalone
+  const isStandalone = window.navigator.standalone === true ||
+    window.matchMedia('(display-mode: standalone)').matches;
+  if (isStandalone) document.body.classList.add('pwa-standalone');
+
+  // 3. Zapobiegnij gumowemu scrollowi na body (iOS)
+  document.body.addEventListener('touchmove', e => {
+    if (e.target === document.body || e.target === document.documentElement) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // 4. Poprawka iOS - inputs nie mogą być mniejsze niż 16px (zoom)
+  // Już obsłużone w CSS, ale upewniamy się przez meta viewport
+
+  // 5. Aktywny status-bar kolor dla PWA
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const themeEl = document.querySelector('meta[name="theme-color"]:not([media])');
+  // Media-matched theme-color metas obsługują to automatycznie
+}
+
 async function initApp() {
+  initMobile();
   runIntro();
   setupEventListeners();
 

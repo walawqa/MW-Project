@@ -1066,10 +1066,6 @@ tr:hover td { background:var(--bg-alt); }
 
 /* ===== iOS PWA ===== */
 :root {
-  --safe-top:    env(safe-area-inset-top,    0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left:   env(safe-area-inset-left,   0px);
-  --safe-right:  env(safe-area-inset-right,  0px);
   --app-height:  100vh;
   --tab-bar-h:   54px;
 }
@@ -1083,7 +1079,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
 
 #bottom-tab-bar { display: none; }
 
-.pwa-standalone #app, .pwa-standalone #auth-screen { padding-top: var(--safe-top); }
+/* pwa-standalone handled below */
 .pwa-standalone .view-header { top: 0; }
 #intro-overlay { padding-top: var(--safe-top); }
 
@@ -1884,4 +1880,191 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
   background: var(--accent-light) !important;
   outline: 2px dashed var(--accent);
   outline-offset: -2px;
+}
+
+/* ============================================================
+   iOS / IPHONE — COMPREHENSIVE MOBILE FIXES
+   ============================================================ */
+
+/* ── Safe area + dynamic height ─────────────────────────────────────── */
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+}
+
+/* Use dvh where supported (iOS 15.4+) */
+@supports (height: 100dvh) {
+  #app, #auth-screen { min-height: 100dvh; }
+}
+
+/* ── PWA standalone (added-to-home-screen) ──────────────────────────── */
+.pwa-standalone #app { padding-top: var(--safe-top); }
+.pwa-standalone #auth-screen { padding-top: max(var(--safe-top), 1rem); }
+.pwa-standalone #bottom-tab-bar { padding-bottom: max(var(--safe-bottom), .5rem); }
+
+/* ── Prevent iOS tap flash on interactive elements ──────────────────── */
+* { -webkit-tap-highlight-color: transparent; }
+input, textarea, select { -webkit-tap-highlight-color: transparent; }
+
+/* ── Prevent text size adjust on rotation ───────────────────────────── */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+@media (max-width: 768px) {
+
+  /* ── Universal filter bar ─────────────────────────────────── */
+  .proj-universal-filters {
+    padding: .4rem .75rem;
+    gap: .4rem;
+    flex-wrap: wrap;
+  }
+  .proj-filter-search {
+    max-width: 100%;
+    width: 100%;
+    order: -1;
+  }
+  .proj-universal-filters .select-input.small {
+    flex: 1 1 calc(50% - .3rem);
+    min-width: 0;
+    font-size: 16px !important;
+  }
+  .proj-show-done-toggle {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  /* ── Project notes / meetings (two-col → single) ──────────── */
+  .project-notes-view {
+    height: calc(var(--app-height, 100dvh) - 160px);
+  }
+  .pnotes-two-col {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pnotes-list-col {
+    border-right: none;
+    border-bottom: 1.5px solid var(--border);
+    max-height: 200px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pnotes-detail-col {
+    min-height: 300px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pnotes-meeting-body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pnotes-subtabs { flex-wrap: nowrap; overflow-x: auto; }
+  .pnotes-subtab { flex-shrink: 0; min-height: 40px; }
+  .pnotes-add-btn { min-height: 40px; min-width: 40px; }
+
+  /* ── Gantt / Oś czasu ─────────────────────────────────────── */
+  .gantt-view-wrap { height: calc(var(--app-height, 100dvh) - 160px); }
+  .gantt-toolbar {
+    padding: .4rem .75rem;
+    gap: .35rem;
+    flex-wrap: wrap;
+    row-gap: .35rem;
+  }
+  .gantt-title { font-size: .8rem; }
+  .gantt-filters { display: none; }
+  .gantt-zoom-btns { order: 1; }
+  #gantt-today-btn { order: 2; font-size: .72rem; padding: .25rem .5rem; min-height: 32px; }
+  #close-gantt { order: 3; min-height: 32px; }
+  .gantt-left-panel { width: 130px; }
+  .gt2-task-lbl { font-size: .68rem; padding: .25rem .5rem; }
+  .gt2-section-lbl { font-size: .62rem; padding: .3rem .5rem; }
+  .gantt-main { font-size: .72rem; }
+
+  /* ── File preview modal ───────────────────────────────────── */
+  .file-preview-modal { padding: 0; align-items: flex-end; }
+  .file-preview-container {
+    border-radius: 20px 20px 0 0;
+    max-height: 92dvh;
+    max-width: 100%;
+  }
+  .file-preview-body iframe { height: 65dvh; min-height: 300px; }
+  .file-preview-body img { max-height: 70dvh; }
+
+  /* ── Modal improvements ───────────────────────────────────── */
+  .modal-panel, .task-modal-panel {
+    max-height: calc(var(--app-height, 100dvh) - var(--safe-top, 0px) - 20px);
+  }
+
+  /* ── Kanban ───────────────────────────────────────────────── */
+  .kanban-column { width: 260px; }
+  .task-card { touch-action: pan-y; }
+
+  /* ── List view ────────────────────────────────────────────── */
+  .list-drag-handle { opacity: 1; font-size: 1rem; }
+  .list-table th:nth-child(n+5), .list-table td:nth-child(n+5) { display: none; }
+  .list-row { min-height: 48px; }
+
+  /* ── Chat ─────────────────────────────────────────────────── */
+  .project-chat-view { height: calc(var(--app-height, 100dvh) - 160px); }
+  .chat-input-area {
+    padding-bottom: calc(.75rem + var(--safe-bottom, 0px));
+    padding-left: max(.75rem, var(--safe-left, 0px));
+    padding-right: max(.75rem, var(--safe-right, 0px));
+  }
+
+  /* ── Auth screen ──────────────────────────────────────────── */
+  .auth-logo-title { font-size: 1.6rem; }
+  .auth-form { padding: 1.25rem 1rem; }
+
+  /* ── Buttons & touch targets ──────────────────────────────── */
+  .btn-primary, .btn-secondary, .btn-danger {
+    min-height: 44px;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  select, input[type="text"], input[type="email"],
+  input[type="password"], input[type="date"], input[type="time"],
+  textarea, .form-input, .gantt-select, .proj-filter-search {
+    font-size: 16px !important; /* zapobiega zoom na iOS */
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: var(--radius-xs);
+  }
+
+  /* ── Intro overlay ────────────────────────────────────────── */
+  #intro-overlay { padding-top: var(--safe-top, 0px); }
+
+  /* ── Scroll na project view ───────────────────────────────── */
+  #view-project {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* ── Landscape iPhone ────────────────────────────────────────────────── */
+@media (max-width: 896px) and (orientation: landscape) and (max-height: 430px) {
+  #bottom-tab-bar { --tab-bar-h: 44px; }
+  .tab-btn { padding-top: .2rem; padding-bottom: .1rem; }
+  .tab-btn svg { width: 20px; height: 20px; }
+  .tab-btn span { display: none; }
+  .modal-panel, .task-modal-panel {
+    max-height: 90dvh;
+    border-radius: 12px 12px 0 0;
+  }
+  .project-notes-view { height: calc(var(--app-height, 100dvh) - 120px); }
+  .gantt-view-wrap { height: calc(var(--app-height, 100dvh) - 120px); }
+}
+
+/* ── Keyboard open — push content up ────────────────────────────────── */
+.keyboard-open .modal-panel,
+.keyboard-open .task-modal-panel {
+  transform: translateY(calc(-1 * var(--keyboard-h, 0px)));
+  transition: transform .25s ease;
+}
+.keyboard-open #bottom-tab-bar {
+  transform: translateY(calc(var(--keyboard-h, 0px)));
+  transition: transform .25s ease;
 }
