@@ -1909,6 +1909,99 @@ function renderProjectList(projectId) {
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
+  // ── Drag & Drop między sekcjami ────────────────────────────────────────
+  let listDragId   = null;  // id przeciąganego zadania
+  let listDragFrom = null;  // colId sekcji źródłowej
+  let dropIndicator = null; // aktywna linia drop-target
+
+  function clearDropIndicators() {
+    container.querySelectorAll('.list-drop-indicator').forEach(el => el.remove());
+    container.querySelectorAll('.list-section-drop-target').forEach(el => el.classList.remove('list-section-drop-target'));
+    dropIndicator = null;
+  }
+
+  function showRowIndicator(tr) {
+    clearDropIndicators();
+    const ind = document.createElement('tr');
+    ind.className = 'list-drop-indicator';
+    ind.innerHTML = `<td colspan="${listCols.length}" style="padding:0;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;"></td>`;
+    tr.parentNode.insertBefore(ind, tr);
+    dropIndicator = ind;
+  }
+
+  function showSectionIndicator(sectionTr) {
+    clearDropIndicators();
+    sectionTr.classList.add('list-section-drop-target');
+  }
+
+  // dragstart
+  container.querySelectorAll('.list-row').forEach(tr => {
+    tr.addEventListener('dragstart', e => {
+      listDragId   = tr.dataset.id;
+      listDragFrom = tr.dataset.sectionCol;
+      tr.classList.add('list-row-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', listDragId);
+    });
+    tr.addEventListener('dragend', () => {
+      tr.classList.remove('list-row-dragging');
+      clearDropIndicators();
+      listDragId = null;
+      listDragFrom = null;
+    });
+  });
+
+  // dragover / drop on rows
+  container.querySelectorAll('.list-row').forEach(tr => {
+    tr.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!listDragId || tr.dataset.id === listDragId) return;
+      e.dataTransfer.dropEffect = 'move';
+      showRowIndicator(tr);
+    });
+    tr.addEventListener('drop', async e => {
+      e.preventDefault();
+      if (!listDragId || tr.dataset.id === listDragId) return;
+      clearDropIndicators();
+      const targetColId = tr.dataset.sectionCol;
+      if (targetColId && targetColId !== listDragFrom) {
+        const col = projects[projectId]?.columns?.find(c => c.id === targetColId);
+        await updateTask(listDragId, { columnId: targetColId }, { action: `Przeniesiono do sekcji "${col?.name || targetColId}"` });
+      }
+    });
+  });
+
+  // dragover / drop on section header rows
+  container.querySelectorAll('.list-section-row').forEach(secTr => {
+    secTr.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!listDragId) return;
+      e.dataTransfer.dropEffect = 'move';
+      showSectionIndicator(secTr);
+    });
+    secTr.addEventListener('dragleave', e => {
+      if (!secTr.contains(e.relatedTarget)) {
+        secTr.classList.remove('list-section-drop-target');
+      }
+    });
+    secTr.addEventListener('drop', async e => {
+      e.preventDefault();
+      clearDropIndicators();
+      if (!listDragId) return;
+      const targetColId = secTr.dataset.col;
+      if (targetColId && targetColId !== listDragFrom) {
+        const col = projects[projectId]?.columns?.find(c => c.id === targetColId);
+        await updateTask(listDragId, { columnId: targetColId }, { action: `Przeniesiono do sekcji "${col?.name || targetColId}"` });
+      }
+    });
+  });
+
+  // Prevent drag from opening modal
+  container.querySelectorAll('.list-drag-handle').forEach(el => {
+    el.addEventListener('mousedown', e => e.stopPropagation());
+  });
+  // ─────────────────────────────────────────────────────────────────────
+
   // Collapse toggle
   container.querySelectorAll('.section-collapse-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -2186,7 +2279,10 @@ function projectListRow(t, col, sectionColId, listCols) {
   const cells = (listCols || getListColumns().filter(c => c.visible)).map(c => {
     switch(c.id) {
       case 'checkbox':
-        return `<td style="text-align:center;padding-left:.25rem;"><input class="list-checkbox" type="checkbox" data-id="${t.id}" ${doneTask ? 'checked' : ''} /></td>`;
+        return `<td style="text-align:center;padding-left:.25rem;display:flex;align-items:center;gap:2px;border-bottom:none;">
+          <span class="list-drag-handle" title="Przeciągnij aby przenieść">⠿</span>
+          <input class="list-checkbox" type="checkbox" data-id="${t.id}" ${doneTask ? 'checked' : ''} />
+        </td>`;
       case 'desc':
         return `<td style="font-size:.73rem;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:0;">${t.desc ? t.desc.slice(0, 120) : '—'}</td>`;
       case 'title':
@@ -2246,7 +2342,7 @@ function projectListRow(t, col, sectionColId, listCols) {
     }
   }).join('');
 
-  return `<tr class="list-row ${doneTask ? 'done' : ''}" data-id="${t.id}" ${sectionColId ? `data-section-col="${sectionColId}"` : ''}>${cells}</tr>`;
+  return `<tr class="list-row ${doneTask ? 'done' : ''}" data-id="${t.id}" data-section-col="${sectionColId || ''}" draggable="true">${cells}</tr>`;
 }
 
 
