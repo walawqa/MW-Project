@@ -1073,9 +1073,9 @@ tr:hover td { background:var(--bg-alt); }
 button, a, .tab-btn, .task-card, .project-card, .nav-item, .task-feed-item, .sidebar-project-item, .project-dropdown-item, .list-row, .mini-cal-day, .cal-day-cell { -webkit-touch-callout: none; }
 button, .tab-btn, .nav-item, .task-card, .project-card { -webkit-user-select: none; user-select: none; }
 input, textarea, [contenteditable], .task-title-input, .comment-input, .note-content { -webkit-user-select: text; user-select: text; }
-.column-tasks, .notes-list, #sidebar, #main-content, .kanban-board, .modal-panel, .modal-body, .task-modal-body, .project-header-tabs, .stats-grid, .projects-grid, .sidebar-projects, #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes, #view-project { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.column-tasks, .notes-list, #sidebar, .kanban-board, .modal-panel, .modal-body, .task-modal-body, .project-header-tabs, .stats-grid, .projects-grid, .sidebar-projects, #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 html { touch-action: manipulation; overflow-x: hidden; }
-body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none; }
+body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: none; }
 
 #bottom-tab-bar { display: none; }
 
@@ -1114,7 +1114,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior: none
   #sidebar { display:none !important; }
   #sidebar-overlay { display:none !important; }
   #mobile-sidebar-toggle { display:none !important; }
-  #main-content { margin-left:0 !important; width:100%; min-height:var(--app-height); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; padding-bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + 10px) !important; }
+  #main-content { margin-left:0 !important; width:100%; min-height:var(--app-height); overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; padding-bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + 20px) !important; }
   #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { padding:.75rem; padding-left:max(.75rem, var(--safe-left)); padding-right:max(.75rem, var(--safe-right)); }
   #auth-screen { align-items:flex-start; padding:calc(var(--safe-top) + 1.5rem) 1rem calc(var(--safe-bottom) + 1rem); overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .auth-container { width:100%; max-width:100%; box-shadow:none; border-left:none; border-right:none; margin:auto 0; }
@@ -1936,7 +1936,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
   /* ── Project notes / meetings (two-col → single) ──────────── */
   .project-notes-view {
-    height: calc(var(--app-height, 100dvh) - 160px);
+    max-height: calc(var(--app-height, 100dvh) - 160px);
+    min-height: 400px;
   }
   .pnotes-two-col {
     grid-template-columns: 1fr;
@@ -1965,7 +1966,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .pnotes-add-btn { min-height: 40px; min-width: 40px; }
 
   /* ── Gantt / Oś czasu ─────────────────────────────────────── */
-  .gantt-view-wrap { height: calc(var(--app-height, 100dvh) - 160px); }
+  .gantt-view-wrap { max-height: calc(var(--app-height, 100dvh) - 160px); min-height: 350px; }
   .gantt-toolbar {
     padding: .4rem .75rem;
     gap: .35rem;
@@ -2036,12 +2037,14 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* ── Intro overlay ────────────────────────────────────────── */
   #intro-overlay { padding-top: var(--safe-top, 0px); }
 
-  /* ── Scroll na project view ───────────────────────────────── */
+  /* ── Project view: NIE ma own scroll - scrolluje #main-content ── */
   #view-project {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
+    overflow: visible;
+    height: auto;
+    min-height: 0;
   }
+  /* Wyłącz overscroll: contain z #view-project bo blokuje scroll na iOS */
+  #view-project { overscroll-behavior: initial; }
 }
 
 /* ── Landscape iPhone ────────────────────────────────────────────────── */
@@ -2354,6 +2357,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   flex-direction: column;
   padding: 0 0 2rem;
 }
+.mlist-wrap { padding-bottom: 80px; }
 .mlist-section { border-bottom: 6px solid var(--bg-alt); }
 .mlist-section:last-child { border-bottom: none; }
 .mlist-section-header {
@@ -2480,6 +2484,11 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .project-list-toolbar {
     padding: .5rem .9rem;
     border-bottom: 1px solid var(--border);
+  }
+  .project-list-container, .project-list-view {
+    overflow: visible;
+    height: auto;
+    min-height: 0;
   }
   .list-header-bar { display: none; }
 }

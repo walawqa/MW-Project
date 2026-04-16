@@ -4155,12 +4155,8 @@ function initMobile() {
     window.matchMedia('(display-mode: standalone)').matches;
   if (isStandalone) document.body.classList.add('pwa-standalone');
 
-  // 3. Zapobiegnij gumowemu scrollowi na body (iOS)
-  document.body.addEventListener('touchmove', e => {
-    if (e.target === document.body || e.target === document.documentElement) {
-      e.preventDefault();
-    }
-  }, { passive: false });
+  // 3. iOS rubber-band scroll prevention — only on fixed overlays
+  // (nie blokujemy scroll na body - to by zablokowało scrollowanie treści)
 
   // 4. Poprawka iOS - inputs nie mogą być mniejsze niż 16px (zoom)
   // Już obsłużone w CSS, ale upewniamy się przez meta viewport
