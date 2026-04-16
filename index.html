@@ -392,9 +392,9 @@
 
       </div>
 
-      <!-- Universal filter bar — always visible -->
+      <!-- Universal filter bar -->
       <div class="proj-universal-filters" id="proj-universal-filters">
-        <input type="text" id="proj-search" class="proj-filter-search" placeholder="🔍 Szukaj zadań..." />
+        <input type="text" id="proj-search" class="proj-filter-search" placeholder="Szukaj zadań..." />
         <select id="proj-filter-priority" class="select-input small">
           <option value="all">Wszystkie priorytety</option>
           <option value="high">Wysoki</option>
@@ -408,6 +408,44 @@
           <input type="checkbox" id="proj-show-done" checked />
           <span>Pokaż zakończone</span>
         </label>
+        <!-- Mobile: filter icon button -->
+        <button class="proj-filter-mobile-btn" id="proj-filter-mobile-btn" title="Filtry">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="18" height="18"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          <span class="proj-filter-active-dot hidden" id="proj-filter-dot"></span>
+        </button>
+      </div>
+
+      <!-- Mobile filter bottom sheet -->
+      <div class="mobile-filter-sheet hidden" id="mobile-filter-sheet">
+        <div class="mobile-filter-backdrop" id="mobile-filter-backdrop"></div>
+        <div class="mobile-filter-panel">
+          <div class="mobile-filter-handle"></div>
+          <div class="mobile-filter-title">Filtry</div>
+          <div class="mobile-filter-body">
+            <div class="mobile-filter-group">
+              <label class="mobile-filter-label">Priorytet</label>
+              <div class="mobile-filter-chips" id="mf-priority-chips">
+                <button class="mf-chip active" data-val="all">Wszystkie</button>
+                <button class="mf-chip" data-val="high">🔴 Wysoki</button>
+                <button class="mf-chip" data-val="medium">🟡 Średni</button>
+                <button class="mf-chip" data-val="low">🟢 Niski</button>
+              </div>
+            </div>
+            <div class="mobile-filter-group">
+              <label class="mobile-filter-label">Osoba</label>
+              <div class="mobile-filter-chips" id="mf-assignee-chips">
+                <button class="mf-chip active" data-val="all">Wszyscy</button>
+              </div>
+            </div>
+            <div class="mobile-filter-group">
+              <label class="mobile-filter-row-label">
+                <input type="checkbox" id="mf-show-done" checked />
+                Pokaż ukończone zadania
+              </label>
+            </div>
+          </div>
+          <button class="mobile-filter-apply" id="mobile-filter-apply">Zastosuj filtry</button>
+        </div>
       </div>
 
       <!-- Project Dashboard -->

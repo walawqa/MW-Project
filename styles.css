@@ -2068,3 +2068,280 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   transform: translateY(calc(var(--keyboard-h, 0px)));
   transition: transform .25s ease;
 }
+
+/* ── Mobile filter button (desktop hidden) ───────────────────────────── */
+.proj-filter-mobile-btn {
+  display: none;
+  position: relative;
+  background: var(--bg-alt);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: .3rem .5rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 36px;
+  min-height: 36px;
+  transition: var(--transition);
+}
+.proj-filter-mobile-btn.has-filters {
+  background: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.proj-filter-active-dot {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 7px; height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+}
+
+/* ── Mobile filter bottom sheet ──────────────────────────────────────── */
+.mobile-filter-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+.mobile-filter-sheet:not(.hidden) { pointer-events: all; }
+.mobile-filter-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.mobile-filter-sheet:not(.hidden) .mobile-filter-backdrop { opacity: 1; }
+.mobile-filter-panel {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  padding: 0 0 calc(1rem + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,.72,0,1);
+  max-height: 80dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-filter-sheet:not(.hidden) .mobile-filter-panel { transform: translateY(0); }
+.mobile-filter-handle {
+  width: 36px; height: 5px;
+  background: var(--border-strong);
+  border-radius: 99px;
+  margin: .75rem auto .5rem;
+}
+.mobile-filter-title {
+  font-size: 1rem;
+  font-weight: 800;
+  padding: .25rem 1.25rem .75rem;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.mobile-filter-body { padding: .9rem 1.25rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.mobile-filter-group { display: flex; flex-direction: column; gap: .5rem; }
+.mobile-filter-label { font-size: .72rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.mobile-filter-chips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.mf-chip {
+  background: var(--bg-alt);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  padding: .4rem .9rem;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  -webkit-appearance: none;
+  min-height: 36px;
+}
+.mf-chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.mobile-filter-row-label {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  padding: .4rem 0;
+}
+.mobile-filter-row-label input { accent-color: var(--accent); width: 20px; height: 20px; }
+.mobile-filter-apply {
+  margin: .5rem 1.25rem 0;
+  width: calc(100% - 2.5rem);
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: .85rem;
+  font-size: .95rem;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-appearance: none;
+  min-height: 50px;
+}
+
+/* ============================================================
+   MOBILE PROJECT VIEW — COMPLETE REDESIGN
+   ============================================================ */
+@media (max-width: 768px) {
+
+  /* ── Filter bar: collapse to search + icon ────────────────── */
+  .proj-universal-filters {
+    padding: .5rem .85rem;
+    gap: .45rem;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .proj-filter-search {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+    height: 36px;
+    font-size: 16px !important;
+  }
+  /* Hide desktop filter dropdowns on mobile */
+  .proj-universal-filters .select-input.small,
+  .proj-show-done-toggle { display: none !important; }
+  /* Show mobile filter button */
+  .proj-filter-mobile-btn { display: flex !important; }
+
+  /* ── Project header — compact native iOS feel ─────────────── */
+  #view-project .view-header > div:first-child {
+    padding: .55rem .85rem .45rem;
+    gap: .5rem;
+  }
+  .project-header-left { gap: .4rem; }
+  .btn-back {
+    font-size: .78rem;
+    padding: .3rem .5rem;
+    min-height: 36px;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  #project-title-header {
+    font-size: 1rem;
+    font-weight: 800;
+  }
+  .project-status-badge { font-size: .65rem; padding: .15rem .55rem; }
+  /* Members + Edit → icon only */
+  #project-members-btn, #project-edit-btn {
+    font-size: 0;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #project-members-btn::before { content: '👥'; font-size: 15px; }
+  #project-edit-btn::before { content: '✏️'; font-size: 15px; }
+
+  /* ── Project tabs — compact scrollable ───────────────────── */
+  #view-project .view-header > div:nth-child(2) {
+    padding: 0 .5rem;
+    gap: 0;
+  }
+  .proj-tab {
+    padding: .55rem .65rem;
+    font-size: .72rem;
+    gap: .25rem;
+    min-height: 40px;
+    white-space: nowrap;
+  }
+  .proj-tab svg { width: 14px; height: 14px; }
+
+  /* ── Project dashboard stat cards ────────────────────────── */
+  .project-dashboard { padding: .6rem .85rem .4rem; }
+  .proj-stat-cards {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: .35rem;
+    margin-bottom: .4rem;
+  }
+  .proj-stat-card {
+    padding: .4rem .3rem;
+    border-radius: var(--radius-sm);
+  }
+  .proj-stat-value { font-size: .95rem !important; }
+  .proj-stat-label { font-size: .5rem !important; }
+
+  /* ── Kanban — native feel ────────────────────────────────── */
+  .kanban-board {
+    padding: .6rem .85rem 1rem;
+    gap: .7rem;
+  }
+  .kanban-column {
+    width: 82vw;
+    max-width: 320px;
+    border-radius: var(--radius);
+  }
+  .column-header { padding: .6rem .85rem .45rem; }
+  .column-title { font-size: .8rem; }
+  .task-card {
+    padding: .7rem .85rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: .35rem;
+  }
+  .task-card-title { font-size: .82rem; line-height: 1.4; }
+  .add-task-btn {
+    margin: .3rem .5rem .5rem;
+    border-radius: var(--radius-sm);
+    font-size: .8rem;
+    min-height: 40px;
+  }
+
+  /* ── List view — clean iOS rows ─────────────────────────── */
+  .project-list-toolbar { padding: .5rem .85rem; }
+  .list-add-split-wrap { width: 100%; }
+  .list-add-split-main {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+    border-radius: var(--radius-sm);
+    font-size: .88rem;
+  }
+  .project-list-container { padding: 0; }
+  .list-table-wrap { padding: 0; }
+  .list-th, .list-td { padding: .55rem .7rem; }
+  /* Hide all columns except task name, priority on mobile */
+  .list-table th:nth-child(n+4),
+  .list-table td:nth-child(n+4) { display: none !important; }
+  .list-table th:nth-child(3),
+  .list-table td:nth-child(3) { display: none !important; }
+  .list-row { min-height: 50px; }
+  .gt2-task-lbl, .list-inline-title { font-size: .85rem; }
+  /* Section headers */
+  .list-section-row td { padding: .5rem .85rem !important; }
+
+  /* ── Add task button in list ─────────────────────────────── */
+  #list-add-task-global {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+  }
+
+  /* ── Col settings btn ────────────────────────────────────── */
+  .list-col-settings-wrap { display: none; }
+
+  /* ── Calendar ────────────────────────────────────────────── */
+  #project-calendar-view { padding: .6rem .85rem; }
+  .cal-day-cell { min-height: 56px; font-size: .72rem; }
+  .cal-event-dot { width: 5px; height: 5px; }
+
+  /* ── Drag handle always visible on touch ─────────────────── */
+  .list-drag-handle { opacity: .6 !important; }
+}

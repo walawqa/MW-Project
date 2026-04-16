@@ -977,6 +977,7 @@ function openProject(projectId) {
   renderKanban(projectId);
   renderProjectList(projectId);
   renderSidebarProjects();
+  populateMobileAssigneeChips?.(projectId);
 }
 
 function getFilteredTasks(projectId, opts = {}) {
@@ -3840,6 +3841,7 @@ $('project-calendar-btn').addEventListener('click', () => {
     savedProjFilters[currentProjectId].search    = $('proj-search').value;
     savedProjFilters[currentProjectId].showDone  = $('proj-show-done').checked;
     try { localStorage.setItem('mw_proj_filters', JSON.stringify(savedProjFilters)); } catch(e) {}
+    updateFilterDot?.();
     // Re-render active view
     renderKanban(currentProjectId);
     renderProjectList(currentProjectId);
@@ -3851,6 +3853,94 @@ $('project-calendar-btn').addEventListener('click', () => {
   $('proj-filter-assignee').addEventListener('change', applyAllFilters);
   $('proj-search').addEventListener('input', applyAllFilters);
   $('proj-show-done').addEventListener('change', applyAllFilters);
+
+  // ── Mobile filter bottom sheet ──────────────────────────────────────
+  function updateFilterDot() {
+    const hasFilters = $('proj-filter-priority').value !== 'all' ||
+      $('proj-filter-assignee').value !== 'all' ||
+      !$('proj-show-done').checked;
+    const btn = $('proj-filter-mobile-btn');
+    const dot = $('proj-filter-dot');
+    if (btn) btn.classList.toggle('has-filters', hasFilters);
+    if (dot) dot.classList.toggle('hidden', !hasFilters);
+  }
+
+  function openMobileFilterSheet() {
+    const sheet = $('mobile-filter-sheet');
+    if (!sheet) return;
+    // Sync chips with current filter values
+    const curPrio = $('proj-filter-priority').value;
+    const curAss  = $('proj-filter-assignee').value;
+    const curDone = $('proj-show-done').checked;
+    sheet.querySelectorAll('#mf-priority-chips .mf-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val === curPrio);
+    });
+    sheet.querySelectorAll('#mf-assignee-chips .mf-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.val === curAss);
+    });
+    const mfDone = $('mf-show-done');
+    if (mfDone) mfDone.checked = curDone;
+    sheet.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileFilterSheet() {
+    $('mobile-filter-sheet')?.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  $('proj-filter-mobile-btn')?.addEventListener('click', openMobileFilterSheet);
+  $('mobile-filter-backdrop')?.addEventListener('click', closeMobileFilterSheet);
+
+  // Chip selection
+  document.querySelectorAll('#mf-priority-chips .mf-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.closest('.mobile-filter-chips').querySelectorAll('.mf-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
+  // Populate assignee chips when project opens
+  function populateMobileAssigneeChips(projectId) {
+    const proj = projects[projectId];
+    if (!proj) return;
+    const container = $('mf-assignee-chips');
+    if (!container) return;
+    const curVal = $('proj-filter-assignee').value;
+    container.innerHTML = '<button class="mf-chip active" data-val="all">Wszyscy</button>';
+    (proj.members || []).forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'mf-chip' + (curVal === m.uid ? ' active' : '');
+      btn.dataset.val = m.uid;
+      btn.textContent = m.name;
+      container.appendChild(btn);
+    });
+    container.querySelectorAll('.mf-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        chip.closest('.mobile-filter-chips').querySelectorAll('.mf-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+      });
+    });
+  }
+
+  // Apply button
+  $('mobile-filter-apply')?.addEventListener('click', () => {
+    const prio = document.querySelector('#mf-priority-chips .mf-chip.active')?.dataset.val || 'all';
+    const ass  = document.querySelector('#mf-assignee-chips .mf-chip.active')?.dataset.val || 'all';
+    const done = $('mf-show-done')?.checked ?? true;
+    $('proj-filter-priority').value = prio;
+    $('proj-filter-assignee').value = ass;
+    $('proj-show-done').checked = done;
+    $('mf-show-done').checked = done;
+    closeMobileFilterSheet();
+    applyAllFilters();
+    updateFilterDot();
+  });
+
+  // Update dot whenever filters change
+  const origApplyAllFilters = applyAllFilters;
+  // Hook into applyAllFilters - updateFilterDot after each call
+  document.addEventListener('filtersApplied', updateFilterDot);
 
 
   // Members modal
