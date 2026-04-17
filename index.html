@@ -1029,6 +1029,23 @@
 
       <div class="settings-divider"></div>
 
+      <!-- Preferences section -->
+      <div class="settings-section-label">Zachowanie</div>
+      <div class="settings-row">
+        <div class="settings-row-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <div>
+            <span>Automatyczne przypisanie</span>
+            <div style="font-size:.72rem;color:var(--text-muted);margin-top:.15rem;">Nowe zadania przypisuj automatycznie do mnie</div>
+          </div>
+        </div>
+        <button id="auto-assign-toggle" class="theme-pill" title="Automatyczne przypisanie">
+          <span class="theme-pill-knob"></span>
+        </button>
+      </div>
+
+      <div class="settings-divider"></div>
+
       <!-- Theme row -->
       <div class="settings-section-label">Wygląd</div>
       <div class="settings-row settings-theme-row">
@@ -1126,6 +1143,29 @@
           setTimeout(() => t.remove(), 2200);
         }
       });
+
+      // Auto-assign toggle
+      const autoAssignBtn = document.getElementById('auto-assign-toggle');
+      if (autoAssignBtn) {
+        function updateAutoAssignUI() {
+          const enabled = localStorage.getItem('mw_auto_assign') === 'true';
+          autoAssignBtn.classList.toggle('active', enabled);
+        }
+        updateAutoAssignUI();
+        autoAssignBtn.addEventListener('click', function() {
+          const cur = localStorage.getItem('mw_auto_assign') === 'true';
+          localStorage.setItem('mw_auto_assign', String(!cur));
+          updateAutoAssignUI();
+          const tc = document.getElementById('toast-container');
+          if (tc) {
+            const t = document.createElement('div');
+            t.className = 'toast success';
+            t.textContent = !cur ? 'Nowe zadania będą przypisywane do Ciebie' : 'Automatyczne przypisanie wyłączone';
+            tc.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+          }
+        });
+      }
     });
   })();
 

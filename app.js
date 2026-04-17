@@ -572,11 +572,14 @@ async function restoreProject(projectId) {
 // TASKS - FIRESTORE
 // ============================================================
 async function createTask(projectId, columnId, title) {
+  const autoAssign = localStorage.getItem('mw_auto_assign') === 'true';
+  const assigneeId   = autoAssign ? (currentUser?.uid || null) : null;
+  const assigneeName = autoAssign ? (currentUser?.displayName || null) : null;
   const taskRef = await addDoc(collection(db, 'tasks'), {
     projectId, columnId, title,
     status: 'open',
     desc: '', priority: 'medium', dueDate: null,
-    assigneeId: null, assigneeName: null,
+    assigneeId, assigneeName,
     checklist: [], attachments: [], comments: [],
     history: [{ action: 'Zadanie utworzone', by: currentUser.displayName || 'Użytkownik', at: new Date().toISOString() }],
     createdAt: serverTimestamp(),
