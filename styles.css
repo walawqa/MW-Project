@@ -1862,13 +1862,15 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .list-drag-handle {
   cursor: grab;
   color: var(--text-light);
-  font-size: .85rem;
+  font-size: .82rem;
   line-height: 1;
-  padding: 0 2px;
+  padding: 0 1px;
   opacity: 0;
   transition: opacity .12s;
   flex-shrink: 0;
   user-select: none;
+  display: inline-flex;
+  align-items: center;
 }
 .list-row:hover .list-drag-handle { opacity: 1; }
 .list-drag-handle:active { cursor: grabbing; }

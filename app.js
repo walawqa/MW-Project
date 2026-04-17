@@ -50,7 +50,7 @@ let chatProjectId = null;
 // LIST COLUMN CONFIG (per user, saved to Firestore)
 // ============================================================
 const LIST_COLUMNS_DEFAULT = [
-  { id: 'checkbox',  label: '',        width: 30,  visible: true,  resizable: false },
+  { id: 'checkbox',  label: '',        width: 52,  visible: true,  resizable: false },
   { id: 'title',     label: 'Nazwa zadania',width: 200,visible: true,  resizable: false, flex: true },
   { id: 'desc',      label: 'Opis',         width: 250, visible: false, resizable: false },
   { id: 'assignee',  label: 'Osoba',        width: 190, visible: true,  resizable: false },
@@ -1837,7 +1837,7 @@ function renderProjectList(projectId) {
       ? `<span class="th-sort-icon${isActive ? ' th-sort-active' : ''}">${listSortDir === 'asc' && isActive ? '↑' : '↓'}</span>`
       : '';
     const style = c.id === 'checkbox'
-      ? 'padding-left:1rem;text-align:center;'
+      ? 'padding:0;text-align:center;width:52px;'
       : c.id === 'title' ? 'padding-left:.5rem;' : '';
     const sortAttr = isSortable ? `data-sort-col="${c.id}"` : '';
     return `<th class="list-th${isSortable ? ' list-th-sortable' : ''}" ${dragHandle} ${sortAttr} data-th-id="${c.id}" style="${style}">
@@ -2435,9 +2435,11 @@ function projectListRow(t, col, sectionColId, listCols) {
   const cells = (listCols || getListColumns().filter(c => c.visible)).map(c => {
     switch(c.id) {
       case 'checkbox':
-        return `<td style="text-align:center;padding-left:.25rem;display:flex;align-items:center;gap:2px;border-bottom:none;">
-          <span class="list-drag-handle" title="Przeciągnij aby przenieść">⠿</span>
-          <input class="list-checkbox" type="checkbox" data-id="${t.id}" ${doneTask ? 'checked' : ''} />
+        return `<td style="text-align:center;padding:0;width:52px;min-width:52px;">
+          <div style="display:flex;align-items:center;justify-content:center;gap:2px;height:100%;padding:0 2px;">
+            <span class="list-drag-handle" title="Przeciągnij aby przenieść">⠿</span>
+            <input class="list-checkbox" type="checkbox" data-id="${t.id}" ${doneTask ? 'checked' : ''} />
+          </div>
         </td>`;
       case 'desc':
         return `<td style="font-size:.73rem;color:var(--text-muted);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:0;">${t.desc ? t.desc.slice(0, 120) : '—'}</td>`;
