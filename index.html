@@ -1350,13 +1350,23 @@
 <!-- Modal potwierdzenia dodania zadania -->
 <div id="add-task-confirm-modal" class="modal hidden">
   <div class="modal-overlay" id="add-task-confirm-overlay"></div>
-  <div class="modal-panel" style="max-width:380px;padding:1.5rem;">
-    <div style="font-weight:700;font-size:.95rem;margin-bottom:1rem;">Nowe zadanie</div>
-    <input id="add-task-confirm-title" type="text" class="form-input" placeholder="Nazwa zadania..." style="width:100%;margin-bottom:1.25rem;" />
-    <div style="display:flex;gap:.5rem;justify-content:flex-end;">
-        <button class="btn-secondary" id="add-task-confirm-cancel">Anuluj</button>
-        <button class="btn-primary" id="add-task-confirm-ok">Dodaj</button>
+  <div class="quick-add-panel">
+    <div class="quick-add-header">
+      <div class="quick-add-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </div>
+      <span class="quick-add-title">Nowe zadanie</span>
+    </div>
+    <div class="quick-add-body">
+      <input id="add-task-confirm-title" type="text" class="quick-add-input" placeholder="Wpisz nazwę zadania..." autocomplete="off" />
+    </div>
+    <div class="quick-add-footer">
+      <button class="quick-add-cancel" id="add-task-confirm-cancel">Anuluj</button>
+      <button class="quick-add-submit" id="add-task-confirm-ok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Dodaj zadanie
+      </button>
+    </div>
   </div>
 </div>
 

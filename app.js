@@ -643,18 +643,172 @@ function getAllProjectTasks() {
 // ============================================================
 // SIDEBAR PROJECTS
 // ============================================================
+// ── Sidebar project order (saved per user in localStorage) ───────────
+function getSidebarOrder() {
+  try { return JSON.parse(localStorage.getItem('mw_sidebar_order') || '[]'); } catch { return []; }
+}
+function saveSidebarOrder(ids) {
+  localStorage.setItem('mw_sidebar_order', JSON.stringify(ids));
+}
+function getSortedSidebarProjects() {
+  const active = Object.values(projects).filter(p => !p.archived);
+  const order  = getSidebarOrder();
+  if (!order.length) return active;
+  const inOrder   = order.map(id => active.find(p => p.id === id)).filter(Boolean);
+  const remainder = active.filter(p => !order.includes(p.id));
+  return [...inOrder, ...remainder];
+}
+
 function renderSidebarProjects() {
   const list = $('sidebar-project-list');
-  const active = Object.values(projects).filter(p => !p.archived);
-  list.innerHTML = active.map(p => `
-    <div class="sidebar-project-item ${currentProjectId === p.id ? 'active' : ''}" data-id="${p.id}">
+  const sorted = getSortedSidebarProjects();
+
+  list.innerHTML = sorted.map(p => `
+    <div class="sidebar-project-item ${currentProjectId === p.id ? 'active' : ''}" data-id="${p.id}" draggable="true">
+      <span class="sidebar-drag-handle" title="Przeciągnij aby zmienić kolejność">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
+      </span>
       <div class="proj-color-dot" style="background:${p.color || '#6B7C5C'}"></div>
-      ${p.name}
+      <span class="sidebar-proj-name">${p.name}</span>
     </div>
   `).join('');
+
+  // ── Click to open ─────────────────────────────────────────────────────
   list.querySelectorAll('.sidebar-project-item').forEach(el => {
-    el.addEventListener('click', () => navigateTo('project', el.dataset.id));
+    el.addEventListener('click', e => {
+      if (e.target.closest('.sidebar-drag-handle')) return;
+      navigateTo('project', el.dataset.id);
+    });
   });
+
+  // ── Drag & Drop ───────────────────────────────────────────────────────
+  let dragId = null;
+  let indicator = null;
+
+  function removeIndicator() {
+    indicator?.remove();
+    indicator = null;
+  }
+
+  function createIndicator(refEl, before) {
+    removeIndicator();
+    indicator = document.createElement('div');
+    indicator.className = 'sidebar-drop-indicator';
+    if (before) refEl.parentNode.insertBefore(indicator, refEl);
+    else        refEl.parentNode.insertBefore(indicator, refEl.nextSibling);
+  }
+
+  list.querySelectorAll('.sidebar-project-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragId = item.dataset.id;
+      item.classList.add('sidebar-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('sidebar-dragging');
+      removeIndicator();
+      dragId = null;
+    });
+
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!dragId || item.dataset.id === dragId) return;
+      const rect   = item.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      createIndicator(item, before);
+    });
+
+    item.addEventListener('dragleave', e => {
+      if (!item.contains(e.relatedTarget)) removeIndicator();
+    });
+
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragId || item.dataset.id === dragId) return;
+      removeIndicator();
+
+      const sorted2 = getSortedSidebarProjects();
+      const ids     = sorted2.map(p => p.id);
+      const from    = ids.indexOf(dragId);
+      const to      = ids.indexOf(item.dataset.id);
+      if (from === -1 || to === -1) return;
+
+      const rect   = item.getBoundingClientRect();
+      const before = e.clientY < rect.top + rect.height / 2;
+      ids.splice(from, 1);
+      const insertAt = before ? ids.indexOf(item.dataset.id) : ids.indexOf(item.dataset.id) + 1;
+      ids.splice(insertAt, 0, dragId);
+
+      saveSidebarOrder(ids);
+      renderSidebarProjects();
+    });
+  });
+
+  // ── Touch DnD (iOS) ───────────────────────────────────────────────────
+  if (window.matchMedia('(hover:none) and (pointer:coarse)').matches) {
+    let touchDragId = null, touchClone = null;
+
+    list.querySelectorAll('.sidebar-drag-handle').forEach(handle => {
+      const item = handle.closest('.sidebar-project-item');
+
+      handle.addEventListener('touchstart', e => {
+        touchDragId = item.dataset.id;
+        item.classList.add('sidebar-dragging');
+        const rect = item.getBoundingClientRect();
+        touchClone = item.cloneNode(true);
+        touchClone.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;opacity:.8;pointer-events:none;z-index:9999;background:var(--surface);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.2);`;
+        document.body.appendChild(touchClone);
+        e.preventDefault();
+      }, { passive: false });
+
+      handle.addEventListener('touchmove', e => {
+        if (!touchClone) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        touchClone.style.top = (t.clientY - 18) + 'px';
+        touchClone.style.display = 'none';
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        touchClone.style.display = '';
+        const targetItem = el?.closest('.sidebar-project-item');
+        if (targetItem && targetItem.dataset.id !== touchDragId) {
+          const rect   = targetItem.getBoundingClientRect();
+          const before = t.clientY < rect.top + rect.height / 2;
+          createIndicator(targetItem, before);
+        } else {
+          removeIndicator();
+        }
+      }, { passive: false });
+
+      handle.addEventListener('touchend', e => {
+        if (!touchDragId) return;
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        touchClone?.remove(); touchClone = null;
+        item.classList.remove('sidebar-dragging');
+        removeIndicator();
+
+        const el = document.elementFromPoint(t.clientX, t.clientY);
+        const targetItem = el?.closest('.sidebar-project-item');
+        if (targetItem && targetItem.dataset.id !== touchDragId) {
+          const sorted2 = getSortedSidebarProjects();
+          const ids     = sorted2.map(p => p.id);
+          const from    = ids.indexOf(touchDragId);
+          const to      = ids.indexOf(targetItem.dataset.id);
+          if (from !== -1 && to !== -1) {
+            const rect   = targetItem.getBoundingClientRect();
+            const before = t.clientY < rect.top + rect.height / 2;
+            ids.splice(from, 1);
+            const insertAt = before ? ids.indexOf(targetItem.dataset.id) : ids.indexOf(targetItem.dataset.id) + 1;
+            ids.splice(insertAt, 0, touchDragId);
+            saveSidebarOrder(ids);
+            renderSidebarProjects();
+          }
+        }
+        touchDragId = null;
+      }, { passive: false });
+    });
+  }
 }
 
 // ============================================================
