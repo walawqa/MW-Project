@@ -825,8 +825,11 @@ function renderDashboard() {
 function renderDashboardStats() {
   const myTasks = getAllProjectTasks().filter(t => t.assigneeId === currentUser.uid);
   const done = myTasks.filter(t => isTaskDone(t));
+  const active = myTasks.filter(t => !isTaskDone(t));
   $('qs-done').textContent = done.length;
   $('qs-projects').textContent = Object.values(projects).filter(p => !p.archived).length;
+  const myTasksEl = $('qs-my-tasks');
+  if (myTasksEl) myTasksEl.textContent = active.length;
   // avatar
   const av = $('dash-user-avatar');
   if (av && currentUser?.displayName) av.textContent = currentUser.displayName.charAt(0).toUpperCase();
@@ -890,9 +893,16 @@ function renderDashboardTasks() {
     });
   };
 
+  // Wszystkie aktywne: zaległe najpierw, potem nadchodzące (bez ukończonych)
+  const all = [
+    ...overdue,
+    ...upcoming,
+  ];
+
+  renderList('all-list',      all,      'Brak aktywnych zadań');
   renderList('upcoming-list', upcoming, 'Brak nadchodzących zadań');
-  renderList('overdue-list', overdue, 'Brak zaległych zadań');
-  renderList('done-list', done, 'Brak ukończonych zadań');
+  renderList('overdue-list',  overdue,  'Brak zaległych zadań');
+  renderList('done-list',     done,     'Brak ukończonych zadań');
 }
 
 function renderDashboardProjects() {
