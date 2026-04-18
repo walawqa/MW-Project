@@ -210,7 +210,6 @@
           <div class="dash-stats-inline">
             <span class="dash-stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> <span id="qs-done">0</span> ukończonych zadań</span>
             <span class="dash-stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> <span id="qs-projects">0</span> projektów</span>
-            <span class="dash-stat-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> moje zadania: <span id="qs-my-tasks">0</span></span>
           </div>
           <div class="header-clock" id="header-clock"></div>
         </div>
@@ -226,16 +225,12 @@
               <span class="dash-my-tasks-title">Moje zadania</span>
             </div>
             <div class="dash-task-tabs">
-              <button class="dash-tab active" data-tab="all">Wszystkie</button>
-              <button class="dash-tab" data-tab="upcoming">Nadchodzące</button>
+              <button class="dash-tab active" data-tab="upcoming">Nadchodzące</button>
               <button class="dash-tab" data-tab="overdue">Zaległe</button>
               <button class="dash-tab" data-tab="done">Ukończone</button>
             </div>
           </div>
-          <div id="dash-tab-all" class="dash-tab-panel">
-            <div id="all-list" class="task-feed"></div>
-          </div>
-          <div id="dash-tab-upcoming" class="dash-tab-panel hidden">
+          <div id="dash-tab-upcoming" class="dash-tab-panel">
             <div id="upcoming-list" class="task-feed"></div>
           </div>
           <div id="dash-tab-overdue" class="dash-tab-panel hidden">
@@ -738,7 +733,7 @@
         <input type="text" id="task-title-input" class="task-title-input" placeholder="Tytuł zadania..." />
         <span class="task-id-badge" id="task-id-badge"></span>
       </div>
-      <button class="btn-icon" id="copy-task-link-btn" title="Kopiuj link do zadania"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>🔗</button>
+      <button class="btn-icon" id="copy-task-link-btn" title="Kopiuj link do zadania"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
       <button class="btn-icon modal-close" id="close-task-modal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     </div>
     <div class="modal-body task-modal-body">

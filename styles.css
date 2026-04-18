@@ -937,7 +937,7 @@ tr:hover td { background:var(--bg-alt); }
 .list-table td:first-child { padding-left:1.25rem; }
 .list-title { font-weight:600; font-size:.82rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:400px; color:var(--text); }
 .list-row.done .list-title { text-decoration:line-through; color:var(--text-muted); }
-.list-pill { display:inline-flex; align-items:center; gap:.25rem; font-size:.65rem; padding:.18rem .48px; border-radius:999px; font-weight:800; white-space:nowrap; }
+.list-pill { display:inline-flex; align-items:center; gap:.3rem; font-size:.68rem; padding:.22rem .6rem; border-radius:999px; font-weight:800; white-space:nowrap; }
 .list-pill.high { background:var(--tag-red-bg); color:var(--tag-red); }
 .list-pill.medium { background:var(--tag-yellow-bg); color:var(--tag-yellow); }
 .list-pill.low { background:var(--tag-green-bg); color:var(--tag-green); }
@@ -970,9 +970,11 @@ tr:hover td { background:var(--bg-alt); }
 .list-assignee-dropdown.hidden { display:none; }
 .list-assignee-option { display:flex; align-items:center; gap:.5rem; padding:.35rem .5rem; border-radius:var(--radius-sm); cursor:pointer; font-size:.78rem; color:var(--text); transition:var(--transition); font-weight:600; }
 .list-assignee-option:hover { background:var(--bg-hover); }
-.list-priority-cell { position:relative; display:inline-flex; align-items:center; }
+.list-priority-cell { position:relative; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
 .list-pill-btn { cursor:pointer; transition:filter .15s, transform .15s; }
 .list-pill-btn:hover { filter:brightness(1.1); transform:scale(1.05); }
+.list-table td:has(.list-priority-cell) { padding: 0; vertical-align: middle; }
+
 .list-priority-dropdown { position:fixed; z-index:9999; background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius-sm); box-shadow:var(--shadow); padding:.3rem; min-width:120px; }
 .list-priority-dropdown.hidden { display:none; }
 .list-priority-option { padding:.32rem .45rem; border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition); }
