@@ -2126,32 +2126,18 @@ function renderProjectList(projectId) {
   }
   // ─────────────────────────────────────────────────────────────────────
 
-  // Sticky header poza overflow-x container — dzięki temu CSS sticky działa
-  const settingsThHtml = `<th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
-                <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                </button>
-              </th>`;
-
   container.innerHTML = `
-    <div class="list-sticky-header-bar" id="list-sticky-header-bar">
-      <table class="list-sticky-header-table" id="list-sticky-header-table" style="table-layout:fixed;width:100%;border-collapse:collapse;">
-        <colgroup>${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
-        <thead>
-          <tr id="list-sticky-header-row">
-            ${headerCells}
-            ${settingsThHtml}
-          </tr>
-        </thead>
-      </table>
-    </div>
     <div class="list-table-wrap">
       <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
         <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
-        <thead class="list-thead-ghost">
+        <thead class="list-thead-sticky">
           <tr id="list-header-row">
             ${headerCells}
-            <th style="width:36px;min-width:36px;padding:0;"></th>
+            <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
+              <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+            </th>
           </tr>
         </thead>
         <tbody>${sectionsHtml}</tbody>
@@ -2162,45 +2148,34 @@ function renderProjectList(projectId) {
   // ---- Event bindings ----
   bindListTableInteractions(container, projectId, listCols);
 
-  // Przywróć pozycję scrolla po re-renderze
+  // Przywróć pozycję scrolla i ustaw wysokość listy
   const newScrollWrap = container.querySelector('.list-table-wrap');
   if (newScrollWrap) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
   }
-  // Ustaw top sticky headera i synchronizuj poziomy scroll
-  requestAnimationFrame(() => initStickyHeaderBar(container));
-}
 
-function initStickyHeaderBar(container) {
-  const stickyBar   = document.getElementById('list-sticky-header-bar');
-  const stickyTable = document.getElementById('list-sticky-header-table');
-  const realTable   = container.querySelector('#list-table');
-  const wrap        = container.querySelector('.list-table-wrap');
-  if (!stickyBar || !wrap) return;
-
-  // view-header jest sticky top:0 więc getBoundingClientRect().bottom
-  // ZAWSZE równa się jego wysokości — niezależnie od pozycji scrolla
-  function updateTop() {
-    const viewHeader = document.querySelector('#view-project .view-header');
-    if (!viewHeader) return;
-    stickyBar.style.top = viewHeader.getBoundingClientRect().bottom + 'px';
+  // Kluczowe: scroll musi być na .list-table-wrap żeby thead sticky działał.
+  // Ustawiamy wysokość dynamicznie żeby wrap wypełnił ekran.
+  function setWrapHeight() {
+    const wrap = container.querySelector('.list-table-wrap');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    if (rect.top > 0 && rect.width > 0) {
+      wrap.style.height = (window.innerHeight - rect.top - 2) + 'px';
+    }
   }
 
-  // Wywołaj od razu, po 100ms i po 400ms (różne stadia renderowania)
-  updateTop();
-  setTimeout(updateTop, 100);
-  setTimeout(updateTop, 400);
+  // Blokuj scroll na #main-content gdy lista jest aktywna
+  const mc = document.getElementById('main-content');
+  if (mc) mc.style.overflowY = 'hidden';
 
-  // Aktualizuj przy każdym scrollu — top musi śledzić view-header
-  const mainContent = document.getElementById('main-content');
-  if (mainContent) mainContent.addEventListener('scroll', updateTop, { passive: true });
-  window.addEventListener('resize', updateTop, { passive: true });
+  requestAnimationFrame(() => {
+    setWrapHeight();
+    setTimeout(setWrapHeight, 100);
+  });
 
-  // Synchronizuj poziomy scroll
-  wrap.addEventListener('scroll', () => {
-    if (stickyTable) stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
-  }, { passive: true });
+  window.addEventListener('resize', setWrapHeight, { passive: true });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
