@@ -2117,19 +2117,33 @@ function renderProjectList(projectId) {
   }
   // ─────────────────────────────────────────────────────────────────────
 
-  container.innerHTML = `
-    <div class="list-table-wrap">
-      <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
-        <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
-        <thead class="list-thead-sticky">
-          <tr id="list-header-row">
-            ${headerCells}
-              <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
+  // Sticky header poza overflow-x container — dzięki temu CSS sticky działa
+  const settingsThHtml = `<th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
                 <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
-              </th>
-            </tr>
+              </th>`;
+
+  container.innerHTML = `
+    <div class="list-sticky-header-bar" id="list-sticky-header-bar">
+      <table class="list-sticky-header-table" id="list-sticky-header-table" style="table-layout:fixed;width:100%;border-collapse:collapse;">
+        <colgroup>${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
+        <thead>
+          <tr id="list-sticky-header-row">
+            ${headerCells}
+            ${settingsThHtml}
+          </tr>
+        </thead>
+      </table>
+    </div>
+    <div class="list-table-wrap">
+      <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
+        <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
+        <thead class="list-thead-ghost">
+          <tr id="list-header-row">
+            ${headerCells}
+            <th style="width:36px;min-width:36px;padding:0;"></th>
+          </tr>
         </thead>
         <tbody>${sectionsHtml}</tbody>
       </table>
@@ -2145,93 +2159,25 @@ function renderProjectList(projectId) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
   }
-  // Sticky fixed header — po zakończeniu layoutu
-  requestAnimationFrame(() => {
-    setTimeout(() => initFixedListHeader(container), 80);
-  });
+  // Ustaw top sticky headera i synchronizuj poziomy scroll
+  requestAnimationFrame(() => initStickyHeaderBar(container));
 }
 
-let _fixedHeaderScrollHandler = null;
-let _fixedHeaderWrapHandler = null;
+function initStickyHeaderBar(container) {
+  const stickyBar = document.getElementById('list-sticky-header-bar');
+  const stickyTable = document.getElementById('list-sticky-header-table');
+  const wrap = container.querySelector('.list-table-wrap');
+  if (!stickyBar || !wrap) return;
 
-function initFixedListHeader(container) {
-  // Usuń poprzedni klon
-  document.querySelector('.list-fixed-header')?.remove();
-  const mainContent = document.getElementById('main-content');
-  if (_fixedHeaderScrollHandler && mainContent) {
-    mainContent.removeEventListener('scroll', _fixedHeaderScrollHandler);
-  }
+  // Ustaw top = wysokość przyklejonego view-header (pasek z nazwą projektu i zakładkami)
+  const viewHeader = document.querySelector('#view-project .view-header');
+  const topOffset = viewHeader ? viewHeader.getBoundingClientRect().height : 0;
+  stickyBar.style.top = topOffset + 'px';
 
-  const table   = container.querySelector('#list-table');
-  const realRow = container.querySelector('#list-header-row');
-  const wrap    = container.querySelector('.list-table-wrap');
-  if (!table || !realRow || !wrap) return;
-
-  // --- Zbuduj fixed clone ---
-  const fixedBar = document.createElement('div');
-  fixedBar.className = 'list-fixed-header';
-  fixedBar.style.cssText = 'position:fixed;z-index:100;display:none;overflow:hidden;background:var(--bg-alt);border-bottom:1.5px solid var(--border);box-sizing:border-box;pointer-events:none;';
-
-  const cloneTable = document.createElement('table');
-  cloneTable.style.cssText = 'table-layout:fixed;border-collapse:collapse;position:relative;';
-
-  const realColgroup = container.querySelector('#list-colgroup');
-  if (realColgroup) {
-    const cg = realColgroup.cloneNode(true);
-    cg.id = '';
-    cloneTable.appendChild(cg);
-  }
-
-  const cloneThead = document.createElement('thead');
-  const cloneRow   = realRow.cloneNode(true);
-  cloneRow.id = '';
-  // Usuń dropdown z klona jeśli jest
-  cloneRow.querySelectorAll('.col-vis-dropdown, #col-vis-dropdown-float').forEach(el => el.remove());
-  cloneThead.appendChild(cloneRow);
-  cloneTable.appendChild(cloneThead);
-  fixedBar.appendChild(cloneTable);
-  document.body.appendChild(fixedBar);
-
-  // --- Funkcja aktualizująca pozycję i widoczność ---
-  function update() {
-    const wrapRect  = wrap.getBoundingClientRect();
-    const rowRect   = realRow.getBoundingClientRect();
-
-    // Pokaż gdy nagłówek wyjdzie poza górę ekranu, ukryj gdy widoczny lub tabela poza ekranem
-    if (rowRect.bottom < 0 || wrapRect.bottom < 60) {
-      fixedBar.style.display = 'none';
-      return;
-    }
-    if (rowRect.top >= 0) {
-      fixedBar.style.display = 'none';
-    } else {
-      fixedBar.style.display = 'block';
-      fixedBar.style.top    = wrapRect.top + 'px';
-      fixedBar.style.left   = wrapRect.left + 'px';
-      fixedBar.style.width  = wrapRect.width + 'px';
-      fixedBar.style.height = realRow.offsetHeight + 'px';
-
-      // Synchronizuj szerokości kolumn
-      const realCells  = realRow.querySelectorAll('th');
-      const cloneCells = cloneRow.querySelectorAll('th');
-      realCells.forEach((th, i) => {
-        if (cloneCells[i]) cloneCells[i].style.width = th.offsetWidth + 'px';
-      });
-
-      // Synchronizuj poziomy scroll
-      cloneTable.style.width = table.offsetWidth + 'px';
-      cloneTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
-    }
-  }
-
-  _fixedHeaderScrollHandler = update;
-  if (mainContent) mainContent.addEventListener('scroll', update, { passive: true });
-
-  if (_fixedHeaderWrapHandler) wrap.removeEventListener('scroll', _fixedHeaderWrapHandler);
-  _fixedHeaderWrapHandler = () => { if (fixedBar.style.display !== 'none') update(); };
-  wrap.addEventListener('scroll', _fixedHeaderWrapHandler, { passive: true });
-
-  window.addEventListener('resize', update, { passive: true });
+  // Synchronizuj poziomy scroll
+  wrap.addEventListener('scroll', () => {
+    if (stickyTable) stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
+  }, { passive: true });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
@@ -3383,13 +3329,17 @@ function renderInbox() {
           <div class="inbox-item-comment">${mentionHighlight}</div>
           <div class="inbox-item-actions">
             ${toggleBtn}
+            <button class="inbox-delete-btn" data-id="${item.id}" title="Usuń wiadomość">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Usuń
+            </button>
           </div>
         </div>
         ${!item.read ? '<div class="inbox-unread-dot"></div>' : ''}
       </div>`;
   }).join('');
 
-  // Toggle read/unread buttons — stop propagation so item click doesn't fire
+  // Toggle read/unread buttons
   list.querySelectorAll('.inbox-toggle-read-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -3401,10 +3351,24 @@ function renderInbox() {
     });
   });
 
+  // Delete buttons
+  list.querySelectorAll('.inbox-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const docId = btn.dataset.id;
+      try {
+        await deleteDoc(doc(db, 'inbox', docId));
+        delete inboxItems[docId];
+        renderInbox();
+        updateInboxBadge();
+      } catch(err) { showToast('Nie udało się usunąć', 'error'); }
+    });
+  });
+
   // Click item body → open task, mark read
   list.querySelectorAll('.inbox-item').forEach(el => {
     el.addEventListener('click', async (e) => {
-      if (e.target.closest('.inbox-toggle-read-btn')) return;
+      if (e.target.closest('.inbox-toggle-read-btn') || e.target.closest('.inbox-delete-btn')) return;
       const docId = el.dataset.id;
       const taskId = el.dataset.taskId;
       const projectId = el.dataset.projectId;
