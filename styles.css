@@ -2726,14 +2726,21 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 }
 
 
-/* ── Sticky header bar — poza overflow-x container, CSS sticky działa ── */
+/* ── Sticky header bar ── */
 .list-sticky-header-bar {
   position: sticky;
   z-index: 15;
   background: var(--bg-alt);
   border-bottom: 1.5px solid var(--border);
-  overflow: hidden;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  overflow: hidden;           /* clip gdy tabela szersza niż kontener */
+  width: 100%;
+}
+/* Tabela wewnątrz sticky bara — width ustawiana przez JS */
+#list-sticky-header-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 100%;            /* nigdy nie węższa niż kontener */
 }
 .list-sticky-header-bar th {
   font-size: .62rem;
@@ -2745,12 +2752,12 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   border-right: 1px solid var(--border);
   white-space: nowrap;
   user-select: none;
-  overflow: hidden;
   background: var(--bg-alt);
+  box-sizing: border-box;
 }
 .list-sticky-header-bar th:last-child { border-right: none; }
 
-/* Ghost thead — utrzymuje wysokość wierszy ale niewidoczny */
+/* Ghost thead — utrzymuje wysokość ale niewidoczny */
 .list-thead-ghost th {
   visibility: hidden;
   font-size: .62rem;
@@ -2758,14 +2765,14 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   border: none;
 }
 
-/* list-table-wrap już bez max-height — scroll na #main-content */
-.list-table-wrap { 
-  overflow-x: auto; 
+/* list-table-wrap: only horizontal scroll — vertical handled by main-content */
+.list-table-wrap {
+  overflow-x: auto;
   overflow-y: visible;
   border: 1.5px solid var(--border);
   border-top: none;
   border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
 
-[data-theme="dark"] .list-sticky-header-bar th,
-[data-theme="dark"] .list-sticky-header-bar { background: var(--bg-alt); }
+[data-theme="dark"] .list-sticky-header-bar,
+[data-theme="dark"] .list-sticky-header-bar th { background: var(--bg-alt); }

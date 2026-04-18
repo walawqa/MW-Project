@@ -2164,20 +2164,50 @@ function renderProjectList(projectId) {
 }
 
 function initStickyHeaderBar(container) {
-  const stickyBar = document.getElementById('list-sticky-header-bar');
+  const stickyBar   = document.getElementById('list-sticky-header-bar');
   const stickyTable = document.getElementById('list-sticky-header-table');
-  const wrap = container.querySelector('.list-table-wrap');
-  if (!stickyBar || !wrap) return;
+  const realTable   = container.querySelector('#list-table');
+  const wrap        = container.querySelector('.list-table-wrap');
+  if (!stickyBar || !wrap || !realTable) return;
 
-  // Ustaw top = wysokość przyklejonego view-header (pasek z nazwą projektu i zakładkami)
+  // top = wysokość przyklejonego view-header
   const viewHeader = document.querySelector('#view-project .view-header');
-  const topOffset = viewHeader ? viewHeader.getBoundingClientRect().height : 0;
+  const topOffset  = viewHeader ? viewHeader.getBoundingClientRect().height : 0;
   stickyBar.style.top = topOffset + 'px';
+
+  // Synchronizuj szerokości kolumn — sticky header musi mieć dokładnie
+  // te same px co komórki właściwej tabeli
+  function syncWidths() {
+    const realCells   = realTable.querySelectorAll('thead th');
+    const stickyCells = stickyTable.querySelectorAll('thead th');
+    let totalW = 0;
+    realCells.forEach((th, i) => {
+      const w = th.getBoundingClientRect().width;
+      totalW += w;
+      if (stickyCells[i]) {
+        stickyCells[i].style.width    = w + 'px';
+        stickyCells[i].style.minWidth = w + 'px';
+        stickyCells[i].style.maxWidth = w + 'px';
+      }
+    });
+    // Szerokość tabeli = suma kolumn (obsługuje poziomy scroll)
+    if (stickyTable) stickyTable.style.width = totalW + 'px';
+  }
+
+  // Uruchom po wyrenderowaniu
+  requestAnimationFrame(() => {
+    syncWidths();
+    // Drugi pass po 150ms — tabela mogła się jeszcze przeliczyć
+    setTimeout(syncWidths, 150);
+  });
 
   // Synchronizuj poziomy scroll
   wrap.addEventListener('scroll', () => {
-    if (stickyTable) stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
+    stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
   }, { passive: true });
+
+  // Przelicz przy resize
+  window.addEventListener('resize', syncWidths, { passive: true });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
