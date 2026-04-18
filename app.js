@@ -2145,88 +2145,94 @@ function renderProjectList(projectId) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
   }
-  // Sticky clone header — po zakończeniu layoutu
-  requestAnimationFrame(() => initStickyListHeader(container));
-}
-
-function initStickyListHeader(container) {
-  // Usuń poprzedni klon
-  const old = container.querySelector('.list-sticky-header-clone');
-  if (old) old.remove();
-
-  const table   = container.querySelector('#list-table');
-  const realRow = container.querySelector('#list-header-row');
-  if (!table || !realRow) return;
-
-  // Stwórz klon wiersza nagłówka
-  const clone = realRow.cloneNode(true);
-  clone.id = '';
-
-  // Wrapper — nakłada się na tabelę, przyklejony na górze
-  const stickyBar = document.createElement('div');
-  stickyBar.className = 'list-sticky-header-clone';
-  stickyBar.style.cssText = [
-    'position:sticky',
-    'top:0',
-    'z-index:15',
-    'overflow:hidden',
-    'pointer-events:auto',
-    'background:var(--bg-alt)',
-    'border-bottom:1.5px solid var(--border)',
-  ].join(';');
-
-  const cloneTable = document.createElement('table');
-  cloneTable.style.cssText = 'table-layout:fixed;width:100%;border-collapse:collapse;';
-  const cloneColgroup = document.createElement('colgroup');
-  const realColgroup = container.querySelector('#list-colgroup');
-  if (realColgroup) cloneColgroup.innerHTML = realColgroup.innerHTML;
-  const cloneThead = document.createElement('thead');
-  cloneThead.appendChild(clone);
-  cloneTable.appendChild(cloneColgroup);
-  cloneTable.appendChild(cloneThead);
-  stickyBar.appendChild(cloneTable);
-
-  // Wstaw PRZED list-table-wrap
-  const wrap = container.querySelector('.list-table-wrap');
-  if (wrap) {
-    container.insertBefore(stickyBar, wrap);
-  } else {
-    container.appendChild(stickyBar);
-  }
-
-  // Ukryj oryginalny nagłówek (zajmuje miejsce ale niewidoczny)
-  realRow.style.visibility = 'hidden';
-
-  // Synchronizuj szerokość klonaTable ze scrollem poziomym
-  if (wrap) {
-    wrap.addEventListener('scroll', () => {
-      cloneTable.style.marginLeft = '-' + wrap.scrollLeft + 'px';
-    }, { passive: true });
-  }
-
-  // Synchronizuj szerokości kolumn po renderze
-  syncStickyHeaderWidths(container);
-}
-
-function syncStickyHeaderWidths(container) {
+  // Sticky fixed header — po zakończeniu layoutu
   requestAnimationFrame(() => {
-    const realCells  = container.querySelectorAll('#list-header-row th');
-    const cloneCells = container.querySelectorAll('.list-sticky-header-clone th');
-    realCells.forEach((th, i) => {
-      if (cloneCells[i]) {
-        cloneCells[i].style.width  = th.offsetWidth + 'px';
-        cloneCells[i].style.minWidth = th.offsetWidth + 'px';
-      }
-    });
+    setTimeout(() => initFixedListHeader(container), 80);
   });
 }
 
-window.addEventListener('resize', () => {
-  const container = document.getElementById('project-list-container');
-  if (container && document.querySelector('#project-list-view:not(.hidden)')) {
-    syncStickyHeaderWidths(container);
+let _fixedHeaderScrollHandler = null;
+let _fixedHeaderWrapHandler = null;
+
+function initFixedListHeader(container) {
+  // Usuń poprzedni klon
+  document.querySelector('.list-fixed-header')?.remove();
+  const mainContent = document.getElementById('main-content');
+  if (_fixedHeaderScrollHandler && mainContent) {
+    mainContent.removeEventListener('scroll', _fixedHeaderScrollHandler);
   }
-}, { passive: true });
+
+  const table   = container.querySelector('#list-table');
+  const realRow = container.querySelector('#list-header-row');
+  const wrap    = container.querySelector('.list-table-wrap');
+  if (!table || !realRow || !wrap) return;
+
+  // --- Zbuduj fixed clone ---
+  const fixedBar = document.createElement('div');
+  fixedBar.className = 'list-fixed-header';
+  fixedBar.style.cssText = 'position:fixed;z-index:100;display:none;overflow:hidden;background:var(--bg-alt);border-bottom:1.5px solid var(--border);box-sizing:border-box;pointer-events:none;';
+
+  const cloneTable = document.createElement('table');
+  cloneTable.style.cssText = 'table-layout:fixed;border-collapse:collapse;position:relative;';
+
+  const realColgroup = container.querySelector('#list-colgroup');
+  if (realColgroup) {
+    const cg = realColgroup.cloneNode(true);
+    cg.id = '';
+    cloneTable.appendChild(cg);
+  }
+
+  const cloneThead = document.createElement('thead');
+  const cloneRow   = realRow.cloneNode(true);
+  cloneRow.id = '';
+  // Usuń dropdown z klona jeśli jest
+  cloneRow.querySelectorAll('.col-vis-dropdown, #col-vis-dropdown-float').forEach(el => el.remove());
+  cloneThead.appendChild(cloneRow);
+  cloneTable.appendChild(cloneThead);
+  fixedBar.appendChild(cloneTable);
+  document.body.appendChild(fixedBar);
+
+  // --- Funkcja aktualizująca pozycję i widoczność ---
+  function update() {
+    const wrapRect  = wrap.getBoundingClientRect();
+    const rowRect   = realRow.getBoundingClientRect();
+
+    // Pokaż gdy nagłówek wyjdzie poza górę ekranu, ukryj gdy widoczny lub tabela poza ekranem
+    if (rowRect.bottom < 0 || wrapRect.bottom < 60) {
+      fixedBar.style.display = 'none';
+      return;
+    }
+    if (rowRect.top >= 0) {
+      fixedBar.style.display = 'none';
+    } else {
+      fixedBar.style.display = 'block';
+      fixedBar.style.top    = wrapRect.top + 'px';
+      fixedBar.style.left   = wrapRect.left + 'px';
+      fixedBar.style.width  = wrapRect.width + 'px';
+      fixedBar.style.height = realRow.offsetHeight + 'px';
+
+      // Synchronizuj szerokości kolumn
+      const realCells  = realRow.querySelectorAll('th');
+      const cloneCells = cloneRow.querySelectorAll('th');
+      realCells.forEach((th, i) => {
+        if (cloneCells[i]) cloneCells[i].style.width = th.offsetWidth + 'px';
+      });
+
+      // Synchronizuj poziomy scroll
+      cloneTable.style.width = table.offsetWidth + 'px';
+      cloneTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
+    }
+  }
+
+  _fixedHeaderScrollHandler = update;
+  if (mainContent) mainContent.addEventListener('scroll', update, { passive: true });
+
+  if (_fixedHeaderWrapHandler) wrap.removeEventListener('scroll', _fixedHeaderWrapHandler);
+  _fixedHeaderWrapHandler = () => { if (fixedBar.style.display !== 'none') update(); };
+  wrap.addEventListener('scroll', _fixedHeaderWrapHandler, { passive: true });
+
+  window.addEventListener('resize', update, { passive: true });
+}
 
 function bindListTableInteractions(container, projectId, listCols) {
   // ── Mobile card list interactions ────────────────────────────────────
