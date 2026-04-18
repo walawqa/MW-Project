@@ -331,6 +331,9 @@ function navigateTo(view, extraData) {
   if (view !== 'project') {
     currentProjectId = null;
     document.querySelectorAll('.sidebar-project-item').forEach(el => el.classList.remove('active'));
+    // Przywróć normalny scroll jeśli był zablokowany przez widok Lista
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) mainContent.style.overflowY = '';
   }
 
   // Blokuj scroll #main-content w widoku projektu — list-table-wrap scrolluje samodzielnie
@@ -1913,6 +1916,9 @@ function renderCalendarGrid(containerId, y, m, taskList, clickable) {
 // PROJECT LIST VIEW (Asana-like)
 // ============================================================
 function hideAllProjectPanels() {
+  // Przywróć scroll #main-content (mógł być zablokowany przez widok Lista)
+  const mc = document.getElementById('main-content');
+  if (mc) mc.style.overflowY = '';
   ['kanban-board','project-list-view','project-dashboard',
    'project-calendar-view','gantt-view','project-chat-view',
    'project-notes-view'].forEach(id => {
@@ -1937,12 +1943,20 @@ function setProjectView(view) {
   hideAllProjectPanels();
   $('project-dashboard').classList.remove('hidden');
   toggleUniversalFilters(true);
+
+  const mainContent = document.getElementById('main-content');
+
   if (view === 'list') {
     $('kanban-board').classList.add('hidden');
     $('project-list-view').classList.remove('hidden');
+    // Zablokuj scroll na #main-content — scrolluje tylko .list-table-wrap
+    // Dzięki temu position:sticky na <thead> działa poprawnie
+    if (mainContent) mainContent.style.overflowY = 'hidden';
   } else {
     $('project-list-view').classList.add('hidden');
     $('kanban-board').classList.remove('hidden');
+    // Przywróć normalny scroll
+    if (mainContent) mainContent.style.overflowY = '';
   }
   if (currentProjectId) renderProjectList(currentProjectId);
 }
@@ -2153,13 +2167,15 @@ function renderProjectList(projectId) {
 function fitListTableHeight(wrap) {
   if (!wrap) return;
   const rect = wrap.getBoundingClientRect();
-  if (rect.top === 0 && rect.height === 0) {
-    // Layout jeszcze niegotowy — spróbuj ponownie
-    setTimeout(() => fitListTableHeight(wrap), 50);
+  if (rect.top <= 0 || rect.width === 0) {
+    // Layout jeszcze niegotowy — spróbuj kilka razy
+    setTimeout(() => fitListTableHeight(wrap), 30);
     return;
   }
-  const available = window.innerHeight - rect.top - 4;
+  // Dostępna wysokość = od górnej krawędzi wrapa do dołu okna - mały margines
+  const available = window.innerHeight - rect.top - 2;
   wrap.style.height = Math.max(120, available) + 'px';
+  wrap.style.overflowY = 'auto';
 }
 
 // Odśwież wysokość przy zmianie rozmiaru okna
