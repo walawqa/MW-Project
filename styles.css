@@ -805,9 +805,6 @@ tr:hover td { background:var(--bg-alt); }
 
 /* ===== SETTINGS MODAL ===== */
 .settings-panel { max-width: 380px; width: 380px; padding: 0; overflow: hidden; }
-@media (max-width: 768px) {
-  .settings-panel { width: 100%; max-width: 100%; border-radius: 20px 20px 0 0; }
-}
 .settings-panel .modal-header { padding: 1.1rem 1.3rem .9rem; border-bottom: 1.5px solid var(--border); }
 .settings-user-header { display: flex; align-items: center; gap: .8rem; padding: 1rem 1.3rem; background: var(--surface); }
 .settings-avatar { width: 42px; height: 42px; font-size: .9rem; flex-shrink: 0; }
@@ -1124,97 +1121,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 [data-theme="dark"] .tab-btn.active { color: var(--accent); }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width:768px) {
-  #sidebar { display:none !important; }
-  #sidebar-overlay { display:none !important; }
-  #mobile-sidebar-toggle { display:none !important; }
-  #main-content { margin-left:0 !important; width:100%; height:var(--app-height) !important; min-height:0 !important; overflow-y:auto; overflow-x:hidden; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; padding-bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + 20px) !important; }
-  #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { padding:.75rem; padding-left:max(.75rem, var(--safe-left)); padding-right:max(.75rem, var(--safe-right)); }
-  #auth-screen { align-items:flex-start; padding:calc(var(--safe-top) + 1.5rem) 1rem calc(var(--safe-bottom) + 1rem); overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .auth-container { width:100%; max-width:100%; box-shadow:none; border-left:none; border-right:none; margin:auto 0; }
-  .view-header { position:sticky; top:0; z-index:50; padding-left:max(.85rem, calc(.85rem + var(--safe-left))); padding-right:max(.85rem, calc(.85rem + var(--safe-right))); }
-  .dashboard-grid { grid-template-columns:1fr; gap:.75rem; }
-  .stats-row { grid-column:1; flex-wrap:wrap; gap:.5rem; }
-  .quick-stat { flex:1 1 calc(50% - .3rem); min-width:0; }
-  .upcoming-tasks, .today-tasks, .mini-calendar-card { grid-column:1; grid-row:auto; max-height:none; }
-  .proj-stat-cards { display:grid !important; grid-template-columns:repeat(3,1fr); gap:.4rem; margin-bottom:.6rem; flex-wrap:unset; }
-  .proj-stat-card { min-width:0 !important; padding:.45rem .4rem; text-align:center; }
-  .proj-stat-value { font-size:1.1rem !important; }
-  .proj-stat-label { font-size:.55rem !important; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .project-header-left { flex-wrap:wrap; gap:.35rem; }
-  .header-actions { flex-wrap:wrap; gap:.35rem; }
-  .project-header-tabs { overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-  .project-header-tabs::-webkit-scrollbar { display:none; }
-  .proj-tab { flex-shrink:0; padding:.55rem .7rem; min-height:40px; }
-  .segmented { flex-wrap:wrap; }
-  .seg-btn { flex:1 1 auto; justify-content:center; min-height:38px; }
-  .project-filters-bar { flex-direction:column; align-items:stretch; gap:.4rem; }
-  .project-filters-bar select, .project-filters-bar .btn-secondary { width:100%; }
-  .project-list-toolbar { flex-direction:column; align-items:stretch; gap:.4rem; }
-  .list-search { width:100%; min-width:0; }
-  .list-table th:nth-child(n+4), .list-table td:nth-child(n+4) { display:none; }
-  .list-title { max-width:180px; }
-  .list-add-split-wrap { width:100%; margin-left:0; }
-  .list-add-split-main { flex:1; justify-content:center; }
-  .kanban-board { padding:.85rem; overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .kanban-column { width:248px; flex-shrink:0; max-height:none; }
-  .modal { align-items:flex-end; padding:0; padding-bottom:0; }
-  .modal-panel { border-radius:20px 20px 0 0; max-height:calc(var(--app-height) - var(--safe-top) - 20px); width:100%; max-width:100%; padding-bottom:calc(1rem + var(--safe-bottom)); overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .task-modal-panel { max-width:100%; border-radius:20px 20px 0 0; height:calc(var(--app-height) - var(--safe-top) - 20px); max-height:calc(var(--app-height) - var(--safe-top) - 20px); padding-bottom:calc(.5rem + var(--safe-bottom)); }
-  .task-modal-body { grid-template-columns:1fr; }
-  .task-sidebar { border-left:none; border-top:1.5px solid var(--border); padding-left:0; padding-top:.85rem; }
-  .notes-layout { grid-template-columns:1fr; height:auto; }
-  #view-statistics .header-actions { flex-wrap:wrap; }
-  #view-statistics .header-actions .select-input { flex:1 1 calc(50% - .3rem); min-width:0; }
-  .full-calendar { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .cal-day-cell { min-height:65px; }
-  #toast-container { bottom:calc(var(--tab-bar-h) + var(--safe-bottom) + .75rem); right:max(.75rem, var(--safe-right)); left:max(.75rem, var(--safe-left)); max-width:calc(100% - max(1.5rem, calc(var(--safe-left) + var(--safe-right)))); }
-  .toast { max-width:100%; }
-  input, textarea, select, .form-group input, .form-group textarea, .form-group select, .list-search, .comment-input, .task-textarea, .select-input, .form-input { font-size:16px !important; transform:none !important; }
-  .btn-primary, .btn-secondary, .btn-danger { min-height:44px; }
-  .btn-back { min-height:40px; }
-  .btn-icon { min-width:36px; min-height:36px; }
-  .tab-btn { min-height:48px; }
-  .nav-item { min-height:40px; }
-  .task-feed-item { min-height:40px; }
-  .list-row { min-height:44px; }
-  .proj-tab { min-height:40px; }
-  .add-task-btn { min-height:44px; }
-  .list-checkbox { min-width:28px; min-height:28px; }
-  .dash-new-layout { grid-template-columns:1fr; grid-template-rows:auto; padding:.75rem; }
-  .dash-my-tasks-card { grid-column:1; grid-row:auto; }
-  .dash-projects-card { grid-column:1; grid-row:auto; }
-  .mini-calendar-card { grid-column:1; grid-row:auto; }
-  .dash-stats-inline { display:none; }
-  .dash-tab-panel { max-height:360px; }
-  .project-chat-view { height:calc(var(--app-height, 100vh) - 200px); }
-  .chat-msg-block { max-width:82%; }
 
-  #bottom-tab-bar {
-    display:flex; position:fixed; bottom:0; left:0; right:0; z-index:500;
-    border-top:1.5px solid var(--border);
-    padding-bottom:max(.3rem, var(--safe-bottom));
-    padding-left:var(--safe-left); padding-right:var(--safe-right);
-    justify-content:space-around; align-items:flex-start;
-    -webkit-backdrop-filter:blur(16px) saturate(1.5);
-    backdrop-filter:blur(16px) saturate(1.5);
-    background:color-mix(in srgb, var(--surface) 88%, transparent);
-  }
-  @supports not (background:color-mix(in srgb, white 88%, transparent)) {
-    #bottom-tab-bar { background:var(--surface); }
-  }
-  .tab-btn { display:flex; flex-direction:column; align-items:center; gap:.15rem; flex:1; background:none; border:none; padding:.48rem .2rem .25rem; color:var(--text-light); font-family:var(--font-body); font-size:.6rem; font-weight:700; cursor:pointer; letter-spacing:.01em; transition:color .12s ease; outline:none; -webkit-appearance:none; appearance:none; }
-  .tab-btn svg { width:24px; height:24px; stroke-width:1.6; transition:transform .12s ease; flex-shrink:0; }
-  .tab-btn.active { color:var(--accent); }
-  .tab-btn.active svg { transform:scale(1.1); stroke-width:2.2; }
-  .tab-btn:active svg { transform:scale(.88); }
-}
-
-@media (max-width:768px) and (orientation:landscape) {
-  .view-header { padding-top:.48rem; padding-bottom:.38rem; }
-  #bottom-tab-bar { --tab-bar-h:48px; }
-  .tab-btn { padding-top:.3rem; }
-}
 
 .keyboard-open .modal-panel, .keyboard-open .task-modal-panel { transform:translateY(calc(-1 * var(--keyboard-h, 0px))); transition:transform .3s ease; }
 #app, #main-content, .view, .view-header, .modal-panel { max-width:100vw; box-sizing:border-box; }
@@ -1225,16 +1132,6 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 
 #view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
 
-@media (max-width:768px) {
-  .project-header-top { padding:.58rem .8rem .45rem; gap:.4rem; }
-  .project-header-tabs { padding:0 .8rem; }
-  .proj-tab { padding:.52rem .65rem; font-size:.72rem; }
-  .project-dashboard { padding:.65rem .8rem; }
-  .project-list-toolbar { padding:.5rem .8rem; }
-  .list-table th:first-child, .list-table td:first-child { padding-left:.8rem; }
-  .list-section-header { padding:.52rem .8rem .42rem; }
-  .kanban-board { padding:.8rem; }
-}
 
 /* ===== PROJECT NOTES TAB ===== */
 .project-notes-view {
@@ -1643,10 +1540,6 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .pnotes-two-col { grid-template-columns: 1fr; }
-  .pnotes-list-col { border-right: none; border-bottom: 1.5px solid var(--border); max-height: 220px; }
-}
 
 /* ===== FILE PREVIEW MODAL (lightbox) ===== */
 .file-preview-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -1929,155 +1822,8 @@ input, textarea, select { -webkit-tap-highlight-color: transparent; }
 /* ── Prevent text size adjust on rotation ───────────────────────────── */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
-@media (max-width: 768px) {
-
-  /* ── Universal filter bar ─────────────────────────────────── */
-  .proj-universal-filters {
-    padding: .4rem .75rem;
-    gap: .4rem;
-    flex-wrap: wrap;
-  }
-  .proj-filter-search {
-    max-width: 100%;
-    width: 100%;
-    order: -1;
-  }
-  .proj-universal-filters .select-input.small {
-    flex: 1 1 calc(50% - .3rem);
-    min-width: 0;
-    font-size: 16px !important;
-  }
-  .proj-show-done-toggle {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  /* ── Project notes / meetings (two-col → single) ──────────── */
-  .project-notes-view {
-    max-height: calc(var(--app-height, 100dvh) - 160px);
-    min-height: 400px;
-  }
-  .pnotes-two-col {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pnotes-list-col {
-    border-right: none;
-    border-bottom: 1.5px solid var(--border);
-    max-height: 200px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pnotes-detail-col {
-    min-height: 300px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pnotes-meeting-body {
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .pnotes-subtabs { flex-wrap: nowrap; overflow-x: auto; }
-  .pnotes-subtab { flex-shrink: 0; min-height: 40px; }
-  .pnotes-add-btn { min-height: 40px; min-width: 40px; }
-
-  /* ── Gantt / Oś czasu ─────────────────────────────────────── */
-  .gantt-view-wrap { max-height: calc(var(--app-height, 100dvh) - 160px); min-height: 350px; }
-  .gantt-toolbar {
-    padding: .4rem .75rem;
-    gap: .35rem;
-    flex-wrap: wrap;
-    row-gap: .35rem;
-  }
-  .gantt-title { font-size: .8rem; }
-  .gantt-filters { display: none; }
-  .gantt-zoom-btns { order: 1; }
-  #gantt-today-btn { order: 2; font-size: .72rem; padding: .25rem .5rem; min-height: 32px; }
-  #close-gantt { order: 3; min-height: 32px; }
-  .gantt-left-panel { width: 130px; }
-  .gt2-task-lbl { font-size: .68rem; padding: .25rem .5rem; }
-  .gt2-section-lbl { font-size: .62rem; padding: .3rem .5rem; }
-  .gantt-main { font-size: .72rem; }
-
-  /* ── File preview modal ───────────────────────────────────── */
-  .file-preview-modal { padding: 0; align-items: flex-end; }
-  .file-preview-container {
-    border-radius: 20px 20px 0 0;
-    max-height: 92dvh;
-    max-width: 100%;
-  }
-  .file-preview-body iframe { height: 65dvh; min-height: 300px; }
-  .file-preview-body img { max-height: 70dvh; }
-
-  /* ── Modal improvements ───────────────────────────────────── */
-  .modal-panel, .task-modal-panel {
-    max-height: calc(var(--app-height, 100dvh) - var(--safe-top, 0px) - 20px);
-  }
-
-  /* ── Kanban ───────────────────────────────────────────────── */
-  .kanban-column { width: 260px; }
-  .task-card { touch-action: pan-y; }
-
-  /* ── List view ────────────────────────────────────────────── */
-  .list-drag-handle { opacity: 1; font-size: 1rem; }
-  .list-table th:nth-child(n+5), .list-table td:nth-child(n+5) { display: none; }
-  .list-row { min-height: 48px; }
-
-  /* ── Chat ─────────────────────────────────────────────────── */
-  .project-chat-view { height: calc(var(--app-height, 100dvh) - 160px); }
-  .chat-input-area {
-    padding-bottom: calc(.75rem + var(--safe-bottom, 0px));
-    padding-left: max(.75rem, var(--safe-left, 0px));
-    padding-right: max(.75rem, var(--safe-right, 0px));
-  }
-
-  /* ── Auth screen ──────────────────────────────────────────── */
-  .auth-logo-title { font-size: 1.6rem; }
-  .auth-form { padding: 1.25rem 1rem; }
-
-  /* ── Buttons & touch targets ──────────────────────────────── */
-  .btn-primary, .btn-secondary, .btn-danger {
-    min-height: 44px;
-    -webkit-appearance: none;
-    appearance: none;
-  }
-  select, input[type="text"], input[type="email"],
-  input[type="password"], input[type="date"], input[type="time"],
-  textarea, .form-input, .gantt-select, .proj-filter-search {
-    font-size: 16px !important; /* zapobiega zoom na iOS */
-    -webkit-appearance: none;
-    appearance: none;
-    border-radius: var(--radius-xs);
-  }
-
-  /* ── Intro overlay ────────────────────────────────────────── */
-  #intro-overlay { padding-top: var(--safe-top, 0px); }
-
-  /* ── Project view: NIE ma own scroll - scrolluje #main-content ── */
-  #view-project {
-    overflow: visible;
-    height: auto;
-    min-height: 0;
-  }
-  /* Wyłącz overscroll: contain z #view-project bo blokuje scroll na iOS */
-  #view-project { overscroll-behavior: initial; }
-}
 
 /* ── Landscape iPhone ────────────────────────────────────────────────── */
-@media (max-width: 896px) and (orientation: landscape) and (max-height: 430px) {
-  #bottom-tab-bar { --tab-bar-h: 44px; }
-  .tab-btn { padding-top: .2rem; padding-bottom: .1rem; }
-  .tab-btn svg { width: 20px; height: 20px; }
-  .tab-btn span { display: none; }
-  .modal-panel, .task-modal-panel {
-    max-height: 90dvh;
-    border-radius: 12px 12px 0 0;
-  }
-  .project-notes-view { height: calc(var(--app-height, 100dvh) - 120px); }
-  .gantt-view-wrap { height: calc(var(--app-height, 100dvh) - 120px); }
-}
 
 /* ── Keyboard open — push content up ────────────────────────────────── */
 .keyboard-open .modal-panel,
@@ -2214,158 +1960,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 /* ============================================================
    MOBILE PROJECT VIEW — COMPLETE REDESIGN
    ============================================================ */
-@media (max-width: 768px) {
-
-  /* ── Filter bar: collapse to search + icon ────────────────── */
-  .proj-universal-filters {
-    padding: .5rem .85rem;
-    gap: .45rem;
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-  .proj-filter-search {
-    flex: 1;
-    min-width: 0;
-    max-width: none;
-    height: 36px;
-    font-size: 16px !important;
-  }
-  /* Hide desktop filter dropdowns on mobile */
-  .proj-universal-filters .select-input.small,
-  .proj-show-done-toggle { display: none !important; }
-  /* Show mobile filter button */
-  .proj-filter-mobile-btn { display: flex !important; }
-
-  /* ── Project header — compact native iOS feel ─────────────── */
-  #view-project .view-header > div:first-child {
-    padding: .55rem .85rem .45rem;
-    gap: .5rem;
-  }
-  .project-header-left { gap: .4rem; }
-  .btn-back {
-    font-size: .78rem;
-    padding: .3rem .5rem;
-    min-height: 36px;
-    background: none;
-    border: none;
-    color: var(--accent);
-    font-weight: 700;
-  }
-  #project-title-header {
-    font-size: 1rem;
-    font-weight: 800;
-  }
-  .project-status-badge { font-size: .65rem; padding: .15rem .55rem; }
-  /* Members + Edit → icon only */
-  #project-members-btn, #project-edit-btn {
-    font-size: 0;
-    width: 34px;
-    height: 34px;
-    padding: 0;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  #project-members-btn::before { content: '👥'; font-size: 15px; }
-  #project-edit-btn::before { content: '✏️'; font-size: 15px; }
-
-  /* ── Project tabs — compact scrollable ───────────────────── */
-  #view-project .view-header > div:nth-child(2) {
-    padding: 0 .5rem;
-    gap: 0;
-  }
-  .proj-tab {
-    padding: .55rem .65rem;
-    font-size: .72rem;
-    gap: .25rem;
-    min-height: 40px;
-    white-space: nowrap;
-  }
-  .proj-tab svg { width: 14px; height: 14px; }
-
-  /* ── Project dashboard stat cards ────────────────────────── */
-  .project-dashboard { padding: .6rem .85rem .4rem; }
-  .proj-stat-cards {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: .35rem;
-    margin-bottom: .4rem;
-  }
-  .proj-stat-card {
-    padding: .4rem .3rem;
-    border-radius: var(--radius-sm);
-  }
-  .proj-stat-value { font-size: .95rem !important; }
-  .proj-stat-label { font-size: .5rem !important; }
-
-  /* ── Kanban — native feel ────────────────────────────────── */
-  .kanban-board {
-    padding: .6rem .85rem 1rem;
-    gap: .7rem;
-  }
-  .kanban-column {
-    width: 82vw;
-    max-width: 320px;
-    border-radius: var(--radius);
-  }
-  .column-header { padding: .6rem .85rem .45rem; }
-  .column-title { font-size: .8rem; }
-  .task-card {
-    padding: .7rem .85rem;
-    border-radius: var(--radius-sm);
-    margin-bottom: .35rem;
-  }
-  .task-card-title { font-size: .82rem; line-height: 1.4; }
-  .add-task-btn {
-    margin: .3rem .5rem .5rem;
-    border-radius: var(--radius-sm);
-    font-size: .8rem;
-    min-height: 40px;
-  }
-
-  /* ── List view — clean iOS rows ─────────────────────────── */
-  .project-list-toolbar { padding: .5rem .85rem; }
-  .list-add-split-wrap { width: 100%; }
-  .list-add-split-main {
-    flex: 1;
-    justify-content: center;
-    min-height: 44px;
-    border-radius: var(--radius-sm);
-    font-size: .88rem;
-  }
-  .project-list-container { padding: 0; }
-  .list-table-wrap { padding: 0; }
-  .list-th, .list-td { padding: .55rem .7rem; }
-  /* Hide all columns except task name, priority on mobile */
-  .list-table th:nth-child(n+4),
-  .list-table td:nth-child(n+4) { display: none !important; }
-  .list-table th:nth-child(3),
-  .list-table td:nth-child(3) { display: none !important; }
-  .list-row { min-height: 50px; }
-  .gt2-task-lbl, .list-inline-title { font-size: .85rem; }
-  /* Section headers */
-  .list-section-row td { padding: .5rem .85rem !important; }
-
-  /* ── Add task button in list ─────────────────────────────── */
-  #list-add-task-global {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-weight: 700;
-  }
-
-  /* ── Col settings btn ────────────────────────────────────── */
-  .list-col-settings-wrap { display: none; }
-
-  /* ── Calendar ────────────────────────────────────────────── */
-  #project-calendar-view { padding: .6rem .85rem; }
-  .cal-day-cell { min-height: 56px; font-size: .72rem; }
-  .cal-event-dot { width: 5px; height: 5px; }
-
-  /* ── Drag handle always visible on touch ─────────────────── */
-  .list-drag-handle { opacity: .6 !important; }
-}
 
 /* ============================================================
    MOBILE LIST — CARD STYLE (iOS native feel)
@@ -2497,19 +2091,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .mlist-row.list-row-dragging { opacity: .35; background: var(--accent-muted); }
 
 /* ── Hide project stat cards on mobile (empty space fix) ── */
-@media (max-width: 768px) {
-  #project-dashboard { display: none !important; }
-  .project-list-toolbar {
-    padding: .5rem .9rem;
-    border-bottom: 1px solid var(--border);
-  }
-  .project-list-container, .project-list-view {
-    overflow: visible;
-    height: auto;
-    min-height: 0;
-  }
-  .list-header-bar { display: none; }
-}
 
 /* ===== FILE TYPE BADGES (zamiast emoji) ===== */
 .ftype-badge {
@@ -2547,10 +2128,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .gt2-done-check { color: #10B981; display: inline-flex; align-items: center; }
 
 /* Mobile project buttons - text instead of emoji */
-@media (max-width: 768px) {
-  #project-members-btn { font-size: .72rem !important; width: auto !important; padding: .25rem .55rem !important; border-radius: var(--radius-xs) !important; }
-  #project-edit-btn    { font-size: .72rem !important; width: auto !important; padding: .25rem .55rem !important; border-radius: var(--radius-xs) !important; }
-}
 
 /* ===== QUICK ADD TASK MODAL ===== */
 .quick-add-panel {
@@ -2661,12 +2238,6 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .quick-add-submit:hover { filter: brightness(1.08); }
 .quick-add-submit:active { transform: scale(.97); }
 
-@media (max-width: 768px) {
-  .quick-add-panel {
-    width: calc(100% - 2rem);
-    max-width: 100%;
-  }
-}
 
 /* ===== SIDEBAR PROJECT DnD ===== */
 .sidebar-project-item {
@@ -2735,4 +2306,835 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   overflow-y: auto;
   border: 1.5px solid var(--border);
   border-radius: var(--radius-sm);
+}
+
+/* ================================================================
+   MW PROJECT — MOBILE OVERRIDE (iPhone 15 / iOS PWA)
+   Kompletny override dla natywnego feel'u
+   ================================================================ */
+
+@media (max-width: 768px) {
+
+  /* ── 1. LAYOUT RESET ───────────────────────────────────────── */
+  #sidebar,
+  #sidebar-overlay,
+  #mobile-sidebar-toggle,
+  .dash-stats-inline,
+  .header-clock { display: none !important; }
+
+  #main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    height: var(--app-height, 100dvh) !important;
+    min-height: 0 !important;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    padding-bottom: calc(var(--tab-bar-h, 60px) + var(--safe-bottom, 0px) + 8px) !important;
+  }
+
+  /* ── 2. BOTTOM TAB BAR — native iOS style ──────────────────── */
+  #bottom-tab-bar {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 999;
+    height: calc(52px + var(--safe-bottom, 0px));
+    padding-bottom: var(--safe-bottom, 0px);
+    padding-left: var(--safe-left, 0px);
+    padding-right: var(--safe-right, 0px);
+    justify-content: space-around;
+    align-items: flex-start;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    backdrop-filter: blur(20px) saturate(1.8);
+  }
+
+  .tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    min-height: 52px;
+    max-height: 52px;
+    padding: 8px 4px 4px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: color 0.15s ease;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+  }
+  .tab-btn svg {
+    width: 24px;
+    height: 24px;
+    stroke-width: 1.6;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .tab-btn.active {
+    color: var(--accent);
+  }
+  .tab-btn.active svg {
+    stroke-width: 2.2;
+    transform: scale(1.08);
+  }
+  .tab-btn:active svg {
+    transform: scale(0.85);
+  }
+  .tab-btn span { line-height: 1; }
+
+  /* ── 3. VIEW HEADER — compact sticky ──────────────────────── */
+  .view-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 12px max(16px, var(--safe-left, 0px)) 10px max(16px, var(--safe-right, 0px));
+    background: var(--glass-bg, var(--surface));
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .view-header h1 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+  }
+  .header-actions { display: none; }
+
+  /* ── 4. DASHBOARD ──────────────────────────────────────────── */
+  #view-dashboard {
+    padding: 0 !important;
+  }
+
+  /* Greeting header */
+  #view-dashboard .view-header {
+    padding: 16px 16px 12px;
+  }
+  #view-dashboard .view-header h1 {
+    font-size: 20px;
+  }
+  #view-dashboard .view-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  /* Stats chips — horizontal scroll row */
+  .dash-stats-inline {
+    display: flex !important;
+    gap: 8px;
+    padding: 10px 16px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .dash-stats-inline::-webkit-scrollbar { display: none; }
+  .dash-stat-chip {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--bg-alt);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .dash-stat-chip svg { opacity: 0.6; }
+
+  /* Dashboard grid — single column full width */
+  .dash-new-layout {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 !important;
+  }
+  .dash-my-tasks-card,
+  .dash-projects-card,
+  .mini-calendar-card {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+
+  /* My tasks card */
+  .dash-my-tasks-header {
+    padding: 14px 16px 10px;
+  }
+  .dash-user-row {
+    margin-bottom: 10px;
+  }
+  .dash-my-tasks-title {
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  /* Task tabs */
+  .dash-task-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .dash-task-tabs::-webkit-scrollbar { display: none; }
+  .dash-tab {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+  }
+  .dash-tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  /* Task feed items */
+  .dash-tab-panel {
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+  .task-feed {
+    padding: 4px 0;
+  }
+  .task-feed-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    min-height: 52px;
+    border-bottom: 1px solid var(--border) !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+  }
+  .task-feed-item:last-child { border-bottom: none !important; }
+  .task-feed-item.overdue { border-left: 3px solid #EF4444 !important; }
+  .feed-check-btn {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border-strong);
+    background: none;
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .feed-check-btn.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .task-feed-title {
+    font-size: 14px;
+    font-weight: 600;
+    flex: 1;
+    line-height: 1.3;
+  }
+  .task-feed-due {
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+  .task-feed-due.overdue { color: #EF4444; }
+
+  /* Empty state */
+  .empty-state {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+
+  /* Projects card */
+  .dash-projects-header {
+    padding: 14px 16px 10px;
+  }
+  .dash-projects-title {
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .dash-projects-grid {
+    max-height: none !important;
+    padding: 0 !important;
+  }
+  .dash-project-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    min-height: 52px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dash-project-row:last-child { border-bottom: none; }
+  .dash-project-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dash-project-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .dash-project-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+
+  /* ── 5. PROJECTS VIEW ──────────────────────────────────────── */
+  #view-projects {
+    padding: 0 !important;
+  }
+  #view-projects .view-header {
+    padding: 16px 16px 12px;
+  }
+  .projects-grid {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0;
+    padding: 0 !important;
+  }
+  .project-card {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 14px 16px !important;
+    box-shadow: none !important;
+  }
+  .project-card:active { background: var(--bg-alt) !important; }
+  .project-card-title {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+  .project-card-desc {
+    font-size: 13px !important;
+    -webkit-line-clamp: 1;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── 6. PROJECT VIEW ───────────────────────────────────────── */
+  #view-project { padding: 0 !important; }
+
+  #view-project .view-header {
+    padding: 0 !important;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--glass-bg, var(--surface));
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .project-header-top {
+    padding: 10px 12px 8px !important;
+    gap: 8px !important;
+  }
+  .btn-back {
+    min-height: 36px !important;
+    font-size: 13px !important;
+    padding: 0 10px !important;
+  }
+  #project-title-header {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+  }
+  .project-header-right { gap: 6px !important; }
+  .btn-primary.small, .btn-secondary.small {
+    font-size: 12px !important;
+    padding: 0 10px !important;
+    min-height: 32px !important;
+  }
+
+  /* Project tabs */
+  .project-header-tabs {
+    padding: 0 12px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    gap: 0 !important;
+    border-bottom: 1px solid var(--border) !important;
+  }
+  .project-header-tabs::-webkit-scrollbar { display: none !important; }
+  .proj-tab {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    flex-shrink: 0 !important;
+    min-height: 44px !important;
+  }
+
+  /* Project stats bar */
+  .project-dashboard {
+    padding: 8px 12px !important;
+  }
+  .proj-stat-cards {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+  .proj-stat-card {
+    padding: 8px 6px !important;
+    text-align: center !important;
+    min-width: 0 !important;
+    border-radius: 10px !important;
+  }
+  .proj-stat-value { font-size: 18px !important; }
+  .proj-stat-label { font-size: 10px !important; }
+
+  /* Filters */
+  .proj-universal-filters {
+    padding: 8px 12px !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .proj-universal-filters::-webkit-scrollbar { display: none !important; }
+  .proj-filter-search {
+    min-width: 140px !important;
+    flex: 1 !important;
+    height: 36px !important;
+    font-size: 14px !important;
+  }
+  .proj-universal-filters .select-input {
+    height: 36px !important;
+    font-size: 13px !important;
+    flex-shrink: 0 !important;
+  }
+  .proj-universal-filters .proj-show-done-label {
+    flex-shrink: 0 !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Mobile filter button */
+  .proj-filter-mobile-btn {
+    min-height: 36px !important;
+    font-size: 13px !important;
+  }
+
+  /* ── 7. KANBAN BOARD ───────────────────────────────────────── */
+  .kanban-board {
+    padding: 12px !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    align-items: flex-start !important;
+    flex: none !important;
+  }
+  .kanban-column {
+    width: 260px !important;
+    flex-shrink: 0 !important;
+    min-height: auto !important;
+    max-height: none !important;
+  }
+  .column-header { padding: 10px 12px !important; }
+  .column-title { font-size: 13px !important; }
+  .column-count { font-size: 11px !important; }
+  .column-tasks {
+    padding: 6px 8px 8px !important;
+    gap: 6px !important;
+    overflow-y: visible !important;
+    min-height: 40px !important;
+  }
+  .task-card {
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+  }
+  .task-card-title { font-size: 13px !important; }
+  .task-card:hover {
+    transform: none !important; /* no hover on touch */
+  }
+  .task-card:active {
+    transform: scale(0.97) !important;
+  }
+  .add-task-btn {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    min-height: 40px !important;
+  }
+
+  /* ── 8. LIST VIEW ──────────────────────────────────────────── */
+  .project-list-toolbar {
+    padding: 8px 12px !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    align-items: center !important;
+    border-bottom: 1px solid var(--border);
+  }
+  .list-add-split-main {
+    flex: 1 !important;
+    min-height: 38px !important;
+    font-size: 13px !important;
+    justify-content: center !important;
+  }
+  .list-add-split-arrow {
+    min-height: 38px !important;
+    min-width: 38px !important;
+  }
+
+  /* Mobile card list (mlist) */
+  .mlist-wrap { padding: 0 !important; }
+  .mlist-section { border-bottom: 1px solid var(--border); }
+  .mlist-section-header {
+    padding: 10px 16px 8px !important;
+    font-size: 12px !important;
+    font-weight: 800 !important;
+    background: var(--bg-alt) !important;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .mlist-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 12px 16px !important;
+    min-height: 52px !important;
+    border-bottom: 1px solid var(--border) !important;
+    background: var(--surface);
+  }
+  .mlist-row:last-child { border-bottom: none !important; }
+  .mlist-row:active { background: var(--bg-alt) !important; }
+  .mlist-check-wrap { flex-shrink: 0; }
+  .mlist-checkbox {
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    min-height: 22px !important;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .mlist-content { flex: 1; min-width: 0; }
+  .mlist-title {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    color: var(--text) !important;
+    display: block;
+  }
+  .mlist-title.done {
+    text-decoration: line-through !important;
+    color: var(--text-muted) !important;
+  }
+  .mlist-meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin-top: 3px !important;
+  }
+  .mlist-due {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    font-weight: 600 !important;
+  }
+  .mlist-due.overdue { color: #EF4444 !important; }
+  .mlist-avatar {
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50% !important;
+    font-size: 9px !important;
+    font-weight: 800 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    flex-shrink: 0 !important;
+  }
+  .mlist-drag { display: none !important; }
+  .mlist-prio-dot {
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+  }
+  .mlist-empty {
+    padding: 16px !important;
+    font-size: 13px !important;
+    color: var(--text-muted) !important;
+  }
+
+  /* ── 9. MODALS — bottom sheet ──────────────────────────────── */
+  .modal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .modal-panel {
+    border-radius: 20px 20px 0 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: calc(var(--app-height, 100dvh) - var(--safe-top, 44px) - 20px) !important;
+    padding-bottom: calc(1rem + var(--safe-bottom, 0px)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .task-modal-panel {
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    height: calc(var(--app-height, 100dvh) - var(--safe-top, 44px) - 20px) !important;
+    max-height: calc(var(--app-height, 100dvh) - var(--safe-top, 44px) - 20px) !important;
+    padding-bottom: calc(0.5rem + var(--safe-bottom, 0px)) !important;
+  }
+  .task-modal-body {
+    grid-template-columns: 1fr !important;
+  }
+  .task-sidebar {
+    border-left: none !important;
+    border-top: 1.5px solid var(--border) !important;
+    padding-left: 0 !important;
+    padding-top: 12px !important;
+  }
+  .modal-header {
+    padding: 14px 16px 12px !important;
+  }
+  .modal-header h2 {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+  }
+  .modal-body { padding: 0 16px 16px !important; }
+  .modal-footer {
+    padding: 12px 16px !important;
+    gap: 8px !important;
+  }
+  .modal-footer .btn-primary,
+  .modal-footer .btn-secondary {
+    flex: 1 !important;
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+
+  /* Add task confirm modal */
+  .quick-add-panel {
+    border-radius: 20px 20px 0 0 !important;
+  }
+  .quick-add-input {
+    font-size: 16px !important;
+    min-height: 44px !important;
+  }
+
+  /* ── 10. FORMS & INPUTS ────────────────────────────────────── */
+  input, textarea, select,
+  .form-group input,
+  .form-group textarea,
+  .form-group select,
+  .list-search,
+  .comment-input,
+  .task-textarea,
+  .select-input,
+  .form-input,
+  .proj-filter-search {
+    font-size: 16px !important; /* prevents iOS zoom */
+  }
+  .form-group { margin-bottom: 12px !important; }
+  .form-group label { font-size: 12px !important; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 12px !important;
+    border-radius: 10px !important;
+    min-height: 44px !important;
+  }
+
+  /* ── 11. BUTTONS ───────────────────────────────────────────── */
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger {
+    min-height: 44px !important;
+    font-size: 15px !important;
+  }
+  .btn-primary.full {
+    min-height: 50px !important;
+    font-size: 16px !important;
+    border-radius: 14px !important;
+  }
+  .btn-icon {
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+
+  /* ── 12. CALENDAR ──────────────────────────────────────────── */
+  #view-calendar {
+    padding: 0 !important;
+  }
+  #view-calendar .view-header {
+    padding: 16px 16px 12px;
+  }
+  .full-calendar {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .cal-day-cell {
+    min-height: 60px !important;
+    font-size: 11px !important;
+  }
+  .cal-day-num { font-size: 12px !important; }
+
+  /* ── 13. INBOX ─────────────────────────────────────────────── */
+  #view-inbox {
+    padding: 0 !important;
+  }
+  #view-inbox .view-header {
+    padding: 16px 16px 12px;
+  }
+  .inbox-list { padding: 8px 0 !important; }
+  .inbox-item {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    margin-bottom: 0 !important;
+    padding: 14px 16px !important;
+  }
+  .inbox-item.unread { border-left: 3px solid var(--accent) !important; }
+  .inbox-item-author { font-size: 14px !important; }
+  .inbox-item-meta { font-size: 13px !important; }
+  .inbox-item-time { font-size: 11px !important; }
+  .inbox-item-comment { font-size: 13px !important; }
+  .inbox-item-actions { gap: 6px !important; }
+  .inbox-toggle-read-btn,
+  .inbox-delete-btn {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    min-height: 32px !important;
+  }
+
+  /* ── 14. STATISTICS ────────────────────────────────────────── */
+  #view-statistics {
+    padding: 0 !important;
+  }
+  #view-statistics .view-header {
+    padding: 16px 16px 12px;
+  }
+  #view-statistics .header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 0 16px 10px !important;
+  }
+  #view-statistics .header-actions .select-input {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-width: 0 !important;
+    height: 38px !important;
+  }
+  .stats-grid {
+    padding: 12px !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+  .stat-card { padding: 14px !important; }
+  .stat-card-value { font-size: 28px !important; }
+
+  /* ── 15. NOTES ─────────────────────────────────────────────── */
+  #view-notes {
+    padding: 0 !important;
+    height: 100% !important;
+  }
+  .notes-layout {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+  .notes-list {
+    max-height: 240px !important;
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+    border-top: none !important;
+  }
+
+  /* ── 16. AUTH SCREEN ───────────────────────────────────────── */
+  #auth-screen {
+    align-items: flex-start !important;
+    padding: calc(var(--safe-top, 44px) + 20px) 16px calc(var(--safe-bottom, 0px) + 20px) !important;
+    overflow-y: auto !important;
+  }
+  .auth-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 20px !important;
+    padding: 24px 20px !important;
+  }
+  .auth-form h2 { font-size: 22px !important; }
+  .auth-subtitle { font-size: 14px !important; }
+
+  /* ── 17. TOAST ─────────────────────────────────────────────── */
+  #toast-container {
+    bottom: calc(var(--tab-bar-h, 60px) + var(--safe-bottom, 0px) + 8px) !important;
+    left: 16px !important;
+    right: 16px !important;
+    max-width: calc(100% - 32px) !important;
+  }
+  .toast {
+    font-size: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  /* ── 18. MISC ──────────────────────────────────────────────── */
+  .segmented { flex-wrap: nowrap !important; overflow-x: auto !important; }
+  .seg-btn { flex: 1 1 auto !important; justify-content: center !important; min-height: 36px !important; font-size: 13px !important; }
+  .project-chat-view { height: calc(var(--app-height, 100dvh) - 200px) !important; }
+  .chat-msg-block { max-width: 82% !important; }
+  .gantt-view-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
+
+  /* PWA standalone adjustments */
+  .pwa-standalone .view-header { padding-top: max(16px, var(--safe-top, 16px)); }
+}
+
+/* ── Landscape iPhone ──────────────────────────────────────── */
+@media (max-width: 896px) and (orientation: landscape) and (max-height: 430px) {
+  #bottom-tab-bar { height: calc(44px + var(--safe-bottom, 0px)); }
+  .tab-btn { min-height: 44px; max-height: 44px; }
+  .tab-btn span { display: none; }
+  .tab-btn svg { width: 22px; height: 22px; }
 }
