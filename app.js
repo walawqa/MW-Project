@@ -59,13 +59,15 @@ const LIST_COLUMNS_DEFAULT = [
   { id: 'priority',  label: 'Priorytet',    width: 90,  visible: true,  resizable: false },
   { id: 'created',   label: 'Utworzono',    width: 95, visible: false, resizable: false },
 ];
-let listColumnConfig = null;
+// projectColumnConfigs: { [projectId]: [...columns] } — per project per user
+let projectColumnConfigs = {};
 let listColSaveTimeout = null;
-let listSortCol = 'due';   // default sort column
-let listSortDir = 'asc';   // 'asc' | 'desc'
+let listSortCol = 'due';
+let listSortDir = 'asc';
 
-function getListColumns() {
-  const saved = listColumnConfig;
+function getListColumns(projectId) {
+  const pid = projectId || currentProjectId;
+  const saved = pid ? projectColumnConfigs[pid] : null;
   const base = LIST_COLUMNS_DEFAULT.map(def => {
     const s = saved ? saved.find(x => x.id === def.id) : null;
     return s ? { ...def, width: s.width ?? def.width, visible: s.visible ?? def.visible } : { ...def };
@@ -85,37 +87,39 @@ async function loadListColumnConfig() {
   if (!currentUser) return;
   try {
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
-    const saved = snap.data()?.listColumnConfig;
-
-    if (saved && Array.isArray(saved)) {
-      // Z Firestore bierzemy tylko visible i kolejnosc.
-      // width zawsze pochodzi z LIST_COLUMNS_DEFAULT — zmiany w kodzie dzialaja od razu.
-      listColumnConfig = saved
-        .map(s => {
-          const def = LIST_COLUMNS_DEFAULT.find(d => d.id === s.id);
-          if (!def) return null; // kolumna usunieta z defaults — ignoruj
-          return { id: s.id, width: def.width, visible: s.visible ?? def.visible };
-        })
-        .filter(Boolean);
-
-      // Dodaj kolumny, ktorych jeszcze nie ma w Firestore (nowe kolumny dodane w kodzie)
-      LIST_COLUMNS_DEFAULT.forEach(def => {
-        if (!listColumnConfig.find(c => c.id === def.id)) {
-          listColumnConfig.push({ id: def.id, width: def.width, visible: def.visible });
-        }
+    const saved = snap.data()?.projectColumnConfigs;
+    if (saved && typeof saved === 'object') {
+      Object.keys(saved).forEach(pid => {
+        const arr = saved[pid];
+        if (!Array.isArray(arr)) return;
+        const normalized = arr
+          .map(s => {
+            const def = LIST_COLUMNS_DEFAULT.find(d => d.id === s.id);
+            if (!def) return null;
+            return { id: s.id, width: def.width, visible: s.visible ?? def.visible };
+          })
+          .filter(Boolean);
+        LIST_COLUMNS_DEFAULT.forEach(def => {
+          if (!normalized.find(c => c.id === def.id))
+            normalized.push({ id: def.id, width: def.width, visible: def.visible });
+        });
+        projectColumnConfigs[pid] = normalized;
       });
     }
-    // Jesli brak zapisu — listColumnConfig pozostaje null, getListColumns() uzyje defaults
   } catch(e) {}
 }
 
-function saveListColumnConfig(cols) {
-  listColumnConfig = cols.map(c => ({ id: c.id, width: c.width, visible: c.visible }));
+function saveListColumnConfig(cols, projectId) {
+  const pid = projectId || currentProjectId;
+  if (!pid) return;
+  projectColumnConfigs[pid] = cols.map(c => ({ id: c.id, width: c.width, visible: c.visible }));
   clearTimeout(listColSaveTimeout);
   listColSaveTimeout = setTimeout(async () => {
     if (!currentUser) return;
     try {
-      await updateDoc(doc(db, 'users', currentUser.uid), { listColumnConfig: listColumnConfig });
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        ['projectColumnConfigs.' + pid]: projectColumnConfigs[pid]
+      });
     } catch(e) {}
   }, 600);
 }
@@ -1990,7 +1994,7 @@ function renderProjectList(projectId) {
   if (orphan.length) sections.push({ col: { id: '__none__', name: 'Pozostałe', color: proj.color || '#6B7C5C' }, tasks: orphan });
 
   const collapsed = collapsedSections[projectId] || new Set();
-  const listCols = getListColumns().filter(c => c.visible);
+  const listCols = getListColumns(projectId).filter(c => c.visible);
 
   // Build colgroup widths
   const colgroupCols = listCols.map(c => {
@@ -2024,13 +2028,13 @@ function renderProjectList(projectId) {
     const isCollapsed = collapsed.has(c.id);
     const buildRows = sec.tasks.length
       ? sec.tasks.map(t => projectListRow(t, c, c.id, listCols)).join('')
-      : `<tr data-section-col="${c.id}"><td colspan="${listCols.length}" style="padding:.55rem 1.25rem;font-size:.78rem;color:var(--text-light);">Brak zadań w tej sekcji</td></tr>`;
+      : `<tr data-section-col="${c.id}"><td colspan="${listCols.length + 1}" style="padding:.55rem 1.25rem;font-size:.78rem;color:var(--text-light);">Brak zadań w tej sekcji</td></tr>`;
 
 
 
     return `
       <tr class="list-section-row" data-col="${c.id}">
-        <td colspan="${listCols.length}" style="padding:.5rem 1.25rem .35rem;background:var(--surface);border-bottom:1px solid var(--border);border-top:2px solid var(--border);">
+        <td colspan="${listCols.length + 1}" style="padding:.5rem 1.25rem .35rem;background:var(--surface);border-bottom:1px solid var(--border);border-top:2px solid var(--border);">
           <div style="display:flex;align-items:center;gap:.4rem;">
             <button class="section-collapse-btn" data-col="${c.id}" title="${isCollapsed ? 'Rozwiń' : 'Zwiń'}" style="background:none;border:none;cursor:pointer;padding:.1rem;display:flex;align-items:center;color:var(--text-muted);transition:color .15s,transform .2s;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="transition:transform .2s ease;transform:rotate(${isCollapsed ? '-90deg' : '0deg'})"><polyline points="6 9 12 15 18 9"/></svg>
@@ -2046,7 +2050,7 @@ function renderProjectList(projectId) {
   }).join('');
 
   // Column visibility toggle button (⚙)
-  const allCols = getListColumns();
+  const allCols = getListColumns(projectId);
   const visibilityMenu = allCols
     .filter(c => c.id !== 'checkbox')
     .map(c => `<label class="col-vis-item"><input type="checkbox" data-vis-col="${c.id}" ${c.visible ? 'checked' : ''}> ${c.label}</label>`)
@@ -2106,22 +2110,22 @@ function renderProjectList(projectId) {
 
   container.innerHTML = `
     <div class="list-table-wrap">
-      <div class="list-header-bar">
-        <div class="list-col-settings-wrap">
-          <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          </button>
-          <div class="col-vis-dropdown hidden" id="col-vis-dropdown">
-            <div class="col-vis-title">Widoczne kolumny</div>
-            ${visibilityMenu}
-          </div>
-        </div>
-      </div>
       <div style="overflow-x:auto;">
         <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
-          <colgroup id="list-colgroup">${colgroupCols}</colgroup>
+          <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
           <thead class="list-thead-sticky">
-            <tr id="list-header-row">${headerCells}</tr>
+            <tr id="list-header-row">
+              ${headerCells}
+              <th class="list-th list-col-settings-wrap" style="width:36px;min-width:36px;padding:0;text-align:center;position:relative;">
+                <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+                <div class="col-vis-dropdown hidden" id="col-vis-dropdown">
+                  <div class="col-vis-title">Widoczne kolumny</div>
+                  ${visibilityMenu}
+                </div>
+              </th>
+            </tr>
           </thead>
           <tbody>${sectionsHtml}</tbody>
         </table>
@@ -2173,7 +2177,7 @@ function bindListTableInteractions(container, projectId, listCols) {
     clearDropIndicators();
     const ind = document.createElement('tr');
     ind.className = 'list-drop-indicator';
-    ind.innerHTML = `<td colspan="${listCols.length}" style="padding:0;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;"></td>`;
+    ind.innerHTML = `<td colspan="${listCols.length + 1}" style="padding:0;height:3px;background:var(--accent);border-radius:2px;pointer-events:none;"></td>`;
     tr.parentNode.insertBefore(ind, tr);
     dropIndicator = ind;
   }
@@ -2520,10 +2524,10 @@ function bindListTableInteractions(container, projectId, listCols) {
     });
     visDropdown.querySelectorAll('input[data-vis-col]').forEach(cb => {
       cb.addEventListener('change', () => {
-        const cols = getListColumns();
+        const cols = getListColumns(projectId);
         const col = cols.find(c => c.id === cb.dataset.visCol);
         if (col) col.visible = cb.checked;
-        saveListColumnConfig(cols);
+        saveListColumnConfig(cols, projectId);
         renderProjectList(projectId);
       });
     });
@@ -2578,13 +2582,13 @@ function bindListTableInteractions(container, projectId, listCols) {
       e.preventDefault();
       const targetColId = th.dataset.dragCol;
       if (!dragColId || dragColId === targetColId) return;
-      const cols = getListColumns();
+      const cols = getListColumns(projectId);
       const fromIdx = cols.findIndex(c => c.id === dragColId);
       const toIdx   = cols.findIndex(c => c.id === targetColId);
       if (fromIdx === -1 || toIdx === -1) return;
       const [moved] = cols.splice(fromIdx, 1);
       cols.splice(toIdx, 0, moved);
-      saveListColumnConfig(cols);
+      saveListColumnConfig(cols, projectId);
       renderProjectList(projectId);
     });
   });
@@ -2605,7 +2609,7 @@ function projectListRow(t, col, sectionColId, listCols) {
     return avatarColors[Math.abs(h) % avatarColors.length];
   }
 
-  const cells = (listCols || getListColumns().filter(c => c.visible)).map(c => {
+  const cells = (listCols || getListColumns(currentProjectId).filter(c => c.visible)).map(c => {
     switch(c.id) {
       case 'checkbox':
         return `<td style="text-align:center;padding:0;width:52px;min-width:52px;">
@@ -2673,7 +2677,7 @@ function projectListRow(t, col, sectionColId, listCols) {
     }
   }).join('');
 
-  return `<tr class="list-row ${doneTask ? 'done' : ''}" data-id="${t.id}" data-section-col="${sectionColId || ''}" draggable="true">${cells}</tr>`;
+  return `<tr class="list-row ${doneTask ? 'done' : ''}" data-id="${t.id}" data-section-col="${sectionColId || ''}" draggable="true">${cells}<td style="width:36px;min-width:36px;"></td></tr>`;
 }
 
 
