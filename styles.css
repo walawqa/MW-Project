@@ -2723,11 +2723,30 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   background: var(--bg-alt);
 }
 
-/* ── Project view: main-content nie scrolluje — list-table-wrap scrolluje samodzielnie ── */
-#main-content.project-view-active {
-  overflow-y: hidden;
-}
-#main-content.project-view-active #view-project {
-  height: 100%;
+
+/* ── Sticky clone header for list view ── */
+.list-sticky-header-clone {
   overflow: hidden;
+  width: 100%;
 }
+.list-sticky-header-clone table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+.list-sticky-header-clone th {
+  font-size: .62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 800;
+  padding: .42rem .75rem;
+  border-bottom: 1.5px solid var(--border);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+  overflow: hidden;
+  background: var(--bg-alt);
+}
+.list-sticky-header-clone th:last-child { border-right: none; }
+[data-theme="dark"] .list-sticky-header-clone th { background: var(--bg-alt); }
