@@ -2697,3 +2697,29 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   margin: 1px 6px;
   pointer-events: none;
 }
+
+/* ── Column resize handle ── */
+.th-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 2;
+  border-radius: 0 3px 3px 0;
+  transition: background .15s;
+}
+.th-resize-handle:hover,
+.th-resize-handle:active {
+  background: var(--accent);
+  opacity: .6;
+}
+
+/* ── Settings th in header ── */
+.list-col-settings-th {
+  position: sticky;
+  right: 0;
+  background: var(--bg-alt);
+  z-index: 3;
+}

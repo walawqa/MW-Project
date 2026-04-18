@@ -2017,8 +2017,11 @@ function renderProjectList(projectId) {
       ? 'padding:0;text-align:center;width:52px;'
       : c.id === 'title' ? 'padding-left:.5rem;' : '';
     const sortAttr = isSortable ? `data-sort-col="${c.id}"` : '';
-    return `<th class="list-th${isSortable ? ' list-th-sortable' : ''}" ${dragHandle} ${sortAttr} data-th-id="${c.id}" style="${style}">
-      <span class="th-label">${c.label}</span>${arrowIcon}
+    const resizeHandle = c.id !== 'checkbox'
+      ? `<span class="th-resize-handle" data-resize-col="${c.id}" title="Przeciągnij aby zmienić szerokość"></span>`
+      : '';
+    return `<th class="list-th${isSortable ? ' list-th-sortable' : ''}" ${dragHandle} ${sortAttr} data-th-id="${c.id}" style="${style}position:relative;">
+      <span class="th-label">${c.label}</span>${arrowIcon}${resizeHandle}
     </th>`;
   }).join('');
 
@@ -2116,14 +2119,10 @@ function renderProjectList(projectId) {
           <thead class="list-thead-sticky">
             <tr id="list-header-row">
               ${headerCells}
-              <th class="list-th list-col-settings-wrap" style="width:36px;min-width:36px;padding:0;text-align:center;position:relative;">
+              <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
                 <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
-                <div class="col-vis-dropdown hidden" id="col-vis-dropdown">
-                  <div class="col-vis-title">Widoczne kolumny</div>
-                  ${visibilityMenu}
-                </div>
               </th>
             </tr>
           </thead>
@@ -2515,13 +2514,38 @@ function bindListTableInteractions(container, projectId, listCols) {
   document.addEventListener('click', function closeInlineDropdowns() {
     container.querySelectorAll('.list-priority-dropdown, .list-assignee-dropdown').forEach(d => d.classList.add('hidden'));
   }, { once: true });
+  // ── Settings dropdown (floating, outside table to avoid overflow clipping) ──
   const settingsBtn = $('list-col-settings-btn');
-  const visDropdown = $('col-vis-dropdown');
-  if (settingsBtn && visDropdown) {
+  if (settingsBtn) {
+    // Build floating dropdown and append to body
+    let visDropdown = document.getElementById('col-vis-dropdown-float');
+    if (visDropdown) visDropdown.remove();
+    const allColsNow = getListColumns(projectId);
+    const menuHtml = allColsNow
+      .filter(c => c.id !== 'checkbox')
+      .map(c => `<label class="col-vis-item"><input type="checkbox" data-vis-col="${c.id}" ${c.visible ? 'checked' : ''}> ${c.label}</label>`)
+      .join('');
+    visDropdown = document.createElement('div');
+    visDropdown.id = 'col-vis-dropdown-float';
+    visDropdown.className = 'col-vis-dropdown hidden';
+    visDropdown.style.cssText = 'position:fixed;z-index:9999;min-width:190px;';
+    visDropdown.innerHTML = `<div class="col-vis-title">Widoczne kolumny</div>${menuHtml}`;
+    document.body.appendChild(visDropdown);
+
     settingsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      visDropdown.classList.toggle('hidden');
+      if (!visDropdown.classList.contains('hidden')) {
+        visDropdown.classList.add('hidden');
+        return;
+      }
+      // Position below the button
+      const rect = settingsBtn.getBoundingClientRect();
+      visDropdown.style.right = (window.innerWidth - rect.right) + 'px';
+      visDropdown.style.top = (rect.bottom + 6) + 'px';
+      visDropdown.style.left = 'auto';
+      visDropdown.classList.remove('hidden');
     });
+
     visDropdown.querySelectorAll('input[data-vis-col]').forEach(cb => {
       cb.addEventListener('change', () => {
         const cols = getListColumns(projectId);
@@ -2531,13 +2555,53 @@ function bindListTableInteractions(container, projectId, listCols) {
         renderProjectList(projectId);
       });
     });
+
     document.addEventListener('click', function hideVis(e) {
-      if (!e.target.closest('.list-col-settings-wrap')) {
+      if (!e.target.closest('#col-vis-dropdown-float') && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
         visDropdown.classList.add('hidden');
         document.removeEventListener('click', hideVis);
       }
     });
   }
+
+  // ── Column resize handles ──
+  container.querySelectorAll('.th-resize-handle').forEach(handle => {
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const colId = handle.dataset.resizeCol;
+      const th = handle.closest('th');
+      const startX = e.clientX;
+      const startW = th.offsetWidth;
+
+      const onMove = (ev) => {
+        const newW = Math.max(50, startW + ev.clientX - startX);
+        // Update colgroup col width in real-time
+        const colgroup = container.querySelector('#list-colgroup');
+        if (colgroup) {
+          const cols = getListColumns(projectId);
+          const visIdx = cols.filter(c => c.visible).findIndex(c => c.id === colId);
+          if (visIdx >= 0 && colgroup.children[visIdx]) {
+            colgroup.children[visIdx].style.width = newW + 'px';
+            colgroup.children[visIdx].style.minWidth = Math.min(newW, 60) + 'px';
+          }
+        }
+      };
+
+      const onUp = (ev) => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        const newW = Math.max(50, startW + ev.clientX - startX);
+        const cols = getListColumns(projectId);
+        const col = cols.find(c => c.id === colId);
+        if (col) col.width = newW;
+        saveListColumnConfig(cols, projectId);
+      };
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
 
 
 
