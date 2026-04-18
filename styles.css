@@ -2720,10 +2720,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 /* ── Settings th in header ── */
 .list-col-settings-th {
-  position: sticky;
-  right: 0;
   background: var(--bg-alt);
-  z-index: 3;
 }
 
 /* ── Project view: main-content nie scrolluje — list-table-wrap scrolluje samodzielnie ── */

@@ -2142,16 +2142,23 @@ function renderProjectList(projectId) {
   if (newScrollWrap) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
-    // Ustaw wysokość dynamicznie — sticky thead działa tylko gdy list-table-wrap sam scrolluje
-    fitListTableHeight(newScrollWrap);
   }
+  // Ustaw wysokość po zakończeniu layoutu przeglądarki
+  requestAnimationFrame(() => {
+    const wrap = container.querySelector('.list-table-wrap');
+    fitListTableHeight(wrap);
+  });
 }
 
 function fitListTableHeight(wrap) {
   if (!wrap) return;
-  // Oblicz dostępną wysokość od góry wrapa do dołu ekranu
   const rect = wrap.getBoundingClientRect();
-  const available = window.innerHeight - rect.top - 8; // 8px oddech od dołu
+  if (rect.top === 0 && rect.height === 0) {
+    // Layout jeszcze niegotowy — spróbuj ponownie
+    setTimeout(() => fitListTableHeight(wrap), 50);
+    return;
+  }
+  const available = window.innerHeight - rect.top - 4;
   wrap.style.height = Math.max(120, available) + 'px';
 }
 
