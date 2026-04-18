@@ -1946,6 +1946,15 @@ function setProjectView(view) {
     $('project-list-view').classList.add('hidden');
     $('kanban-board').classList.remove('hidden');
   }
+
+  // Ustaw top paska filtrów = wysokość view-header
+  requestAnimationFrame(() => {
+    const viewHeader = document.querySelector('#view-project .view-header');
+    const vh = viewHeader ? viewHeader.offsetHeight : 0;
+    const filterBar = document.getElementById('proj-universal-filters');
+    if (filterBar) filterBar.style.top = vh + 'px';
+  });
+
   if (currentProjectId) renderProjectList(currentProjectId);
 }
 
@@ -2168,46 +2177,30 @@ function initStickyHeaderBar(container) {
   const stickyTable = document.getElementById('list-sticky-header-table');
   const realTable   = container.querySelector('#list-table');
   const wrap        = container.querySelector('.list-table-wrap');
-  if (!stickyBar || !wrap || !realTable) return;
+  if (!stickyBar || !wrap) return;
 
-  // top = wysokość przyklejonego view-header
-  const viewHeader = document.querySelector('#view-project .view-header');
-  const topOffset  = viewHeader ? viewHeader.getBoundingClientRect().height : 0;
-  stickyBar.style.top = topOffset + 'px';
-
-  // Synchronizuj szerokości kolumn — sticky header musi mieć dokładnie
-  // te same px co komórki właściwej tabeli
-  function syncWidths() {
-    const realCells   = realTable.querySelectorAll('thead th');
-    const stickyCells = stickyTable.querySelectorAll('thead th');
-    let totalW = 0;
-    realCells.forEach((th, i) => {
-      const w = th.getBoundingClientRect().width;
-      totalW += w;
-      if (stickyCells[i]) {
-        stickyCells[i].style.width    = w + 'px';
-        stickyCells[i].style.minWidth = w + 'px';
-        stickyCells[i].style.maxWidth = w + 'px';
-      }
-    });
-    // Szerokość tabeli = suma kolumn (obsługuje poziomy scroll)
-    if (stickyTable) stickyTable.style.width = totalW + 'px';
+  // view-header jest sticky top:0 więc getBoundingClientRect().bottom
+  // ZAWSZE równa się jego wysokości — niezależnie od pozycji scrolla
+  function updateTop() {
+    const viewHeader = document.querySelector('#view-project .view-header');
+    if (!viewHeader) return;
+    stickyBar.style.top = viewHeader.getBoundingClientRect().bottom + 'px';
   }
 
-  // Uruchom po wyrenderowaniu
-  requestAnimationFrame(() => {
-    syncWidths();
-    // Drugi pass po 150ms — tabela mogła się jeszcze przeliczyć
-    setTimeout(syncWidths, 150);
-  });
+  // Wywołaj od razu, po 100ms i po 400ms (różne stadia renderowania)
+  updateTop();
+  setTimeout(updateTop, 100);
+  setTimeout(updateTop, 400);
+
+  // Aktualizuj przy każdym scrollu — top musi śledzić view-header
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.addEventListener('scroll', updateTop, { passive: true });
+  window.addEventListener('resize', updateTop, { passive: true });
 
   // Synchronizuj poziomy scroll
   wrap.addEventListener('scroll', () => {
-    stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
+    if (stickyTable) stickyTable.style.transform = 'translateX(-' + wrap.scrollLeft + 'px)';
   }, { passive: true });
-
-  // Przelicz przy resize
-  window.addEventListener('resize', syncWidths, { passive: true });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
