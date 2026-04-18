@@ -2311,13 +2311,56 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 
 /* ── List table: scroll in wrap, sticky thead ── */
+/* Frozen header container */
+.list-frozen-header {
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--bg-alt);
+  border: 1.5px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.list-frozen-header-inner {
+  overflow: hidden; /* clips translated header */
+  width: 100%;
+}
+.list-frozen-header-table {
+  border-collapse: collapse;
+  min-width: 100%;
+}
+.list-frozen-header-table th {
+  font-size: .62rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  font-weight: 800;
+  padding: .42rem .75rem;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  user-select: none;
+  background: var(--bg-alt);
+  box-sizing: border-box;
+}
+.list-frozen-header-table th:last-child { border-right: none; }
+[data-theme="dark"] .list-frozen-header-table th { background: var(--bg-alt); }
+
+/* Ghost thead — invisible, only reserves column widths */
+.list-thead-ghost th {
+  visibility: hidden;
+  font-size: .62rem;
+  padding: .42rem .75rem;
+  border: none;
+}
+
+/* Main scroll container */
 .list-table-wrap {
   flex: 1;
   min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
   border: 1.5px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
 
 /* ================================================================

@@ -2126,18 +2126,34 @@ function renderProjectList(projectId) {
   }
   // ─────────────────────────────────────────────────────────────────────
 
+  // ── Frozen header pattern ──────────────────────────────────────
+  // Dwa osobne elementy: header (nie scrolluje) + tabela (scrolluje).
+  // Synchronizacja poziomego scrolla przez JS.
+  const settingsBtnHtml = `<button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>`;
+
   container.innerHTML = `
-    <div class="list-table-wrap">
+    <div class="list-frozen-header" id="list-frozen-header">
+      <div class="list-frozen-header-inner" id="list-frozen-header-inner">
+        <table class="list-frozen-header-table" style="table-layout:fixed;border-collapse:collapse;">
+          <colgroup>${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
+          <thead>
+            <tr id="list-frozen-header-row">
+              ${headerCells}
+              <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
+                ${settingsBtnHtml}
+              </th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+    <div class="list-table-wrap" id="list-table-wrap">
       <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
         <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
-        <thead class="list-thead-sticky">
+        <thead class="list-thead-ghost">
           <tr id="list-header-row">
             ${headerCells}
-            <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
-              <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-              </button>
-            </th>
+            <th style="width:36px;min-width:36px;padding:0;"></th>
           </tr>
         </thead>
         <tbody>${sectionsHtml}</tbody>
@@ -2148,20 +2164,35 @@ function renderProjectList(projectId) {
   // ---- Event bindings ----
   bindListTableInteractions(container, projectId, listCols);
 
-  // Przywróć pozycję scrolla i ustaw wysokość listy
+  // Przywróć scroll
   const newScrollWrap = container.querySelector('.list-table-wrap');
   if (newScrollWrap) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
   }
 
-  // Kluczowe: scroll musi być na .list-table-wrap żeby thead sticky działał.
-  // Ustawiamy wysokość dynamicznie żeby wrap wypełnił ekran.
-  // Zablokuj scroll na #main-content — flex chain zapewnia
-  // że .list-table-wrap wypełni pozostałą przestrzeń i sam scrolluje.
-  // Dzięki temu position:sticky na <thead> działa poprawnie.
-  // Używamy klasy project-view-active (już ustawionej przez navigateTo)
-  // CSS tej klasy blokuje scroll i aktywuje flex chain
+  // Frozen header: synchronizuj poziomy scroll + szerokości kolumn
+  requestAnimationFrame(() => {
+    const wrap        = document.getElementById('list-table-wrap');
+    const headerInner = document.getElementById('list-frozen-header-inner');
+    const headerTable = headerInner?.querySelector('table');
+    const mainTable   = document.getElementById('list-table');
+    if (!wrap || !headerTable || !mainTable) return;
+
+    // Ustaw szerokość header table = szerokość głównej tabeli
+    function syncHeaderWidth() {
+      headerTable.style.width = mainTable.offsetWidth + 'px';
+    }
+    syncHeaderWidth();
+    setTimeout(syncHeaderWidth, 150);
+
+    // Synchronizuj poziomy scroll
+    wrap.addEventListener('scroll', () => {
+      headerInner.scrollLeft = wrap.scrollLeft;
+    }, { passive: true });
+
+    new ResizeObserver(syncHeaderWidth).observe(mainTable);
+  });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
