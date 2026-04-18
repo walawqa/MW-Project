@@ -2157,25 +2157,35 @@ function renderProjectList(projectId) {
 
   // Kluczowe: scroll musi być na .list-table-wrap żeby thead sticky działał.
   // Ustawiamy wysokość dynamicznie żeby wrap wypełnił ekran.
+  // Na mobile: table scroll jest OK via overflow-y:auto na list-table-wrap
+  // Na desktop: ustawiamy max-height żeby thead sticky działało
   function setWrapHeight() {
+    if (window.innerWidth <= 768) return; // mobile - CSS handles it
     const wrap = container.querySelector('.list-table-wrap');
     if (!wrap) return;
     const rect = wrap.getBoundingClientRect();
     if (rect.top > 0 && rect.width > 0) {
+      const mc = document.getElementById('main-content');
+      if (mc) mc.style.overflowY = 'hidden';
       wrap.style.height = (window.innerHeight - rect.top - 2) + 'px';
     }
   }
 
-  // Blokuj scroll na #main-content gdy lista jest aktywna
-  const mc = document.getElementById('main-content');
-  if (mc) mc.style.overflowY = 'hidden';
-
   requestAnimationFrame(() => {
     setWrapHeight();
-    setTimeout(setWrapHeight, 100);
+    setTimeout(setWrapHeight, 150);
   });
 
-  window.addEventListener('resize', setWrapHeight, { passive: true });
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) setWrapHeight();
+    else {
+      // Restore on mobile
+      const mc = document.getElementById('main-content');
+      if (mc) mc.style.overflowY = '';
+      const wrap = container.querySelector('.list-table-wrap');
+      if (wrap) wrap.style.height = '';
+    }
+  }, { passive: true });
 }
 
 function bindListTableInteractions(container, projectId, listCols) {
@@ -4432,7 +4442,23 @@ $('project-calendar-btn').addEventListener('click', () => {
 // ============================================================
 // iOS / MOBILE INIT
 // ============================================================
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
 function initMobile() {
+  // Enforce mobile layout — hide sidebar, show tab bar
+  function applyMobileLayout() {
+    if (isMobile()) {
+      const sidebar = document.getElementById('sidebar');
+      if (sidebar) sidebar.style.display = 'none';
+      const tabBar = document.getElementById('bottom-tab-bar');
+      if (tabBar) tabBar.style.display = 'flex';
+    }
+  }
+  applyMobileLayout();
+  window.addEventListener('resize', applyMobileLayout, { passive: true });
+
   // 1. Dynamiczny --app-height (naprawia iOS 100vh bug z paskiem URL)
   function updateAppHeight() {
     const h = (window.visualViewport ? window.visualViewport.height : window.innerHeight);

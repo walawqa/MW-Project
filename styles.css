@@ -2460,20 +2460,23 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   /* Dashboard grid — single column full width */
   .dash-new-layout {
     display: flex !important;
-    flex-direction: column;
-    gap: 0;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    gap: 0 !important;
     padding: 0 !important;
   }
   .dash-my-tasks-card,
   .dash-projects-card,
   .mini-calendar-card {
-    grid-column: 1 !important;
+    grid-column: 1 / -1 !important;
     grid-row: auto !important;
+    width: 100% !important;
     border-radius: 0 !important;
     border-left: none !important;
     border-right: none !important;
     border-top: none !important;
     border-bottom: 1px solid var(--border) !important;
+    flex-shrink: 0 !important;
   }
 
   /* My tasks card */
