@@ -2157,35 +2157,11 @@ function renderProjectList(projectId) {
 
   // Kluczowe: scroll musi być na .list-table-wrap żeby thead sticky działał.
   // Ustawiamy wysokość dynamicznie żeby wrap wypełnił ekran.
-  // Na mobile: table scroll jest OK via overflow-y:auto na list-table-wrap
-  // Na desktop: ustawiamy max-height żeby thead sticky działało
-  function setWrapHeight() {
-    if (window.innerWidth <= 768) return; // mobile - CSS handles it
-    const wrap = container.querySelector('.list-table-wrap');
-    if (!wrap) return;
-    const rect = wrap.getBoundingClientRect();
-    if (rect.top > 0 && rect.width > 0) {
-      const mc = document.getElementById('main-content');
-      if (mc) mc.style.overflowY = 'hidden';
-      wrap.style.height = (window.innerHeight - rect.top - 2) + 'px';
-    }
-  }
-
-  requestAnimationFrame(() => {
-    setWrapHeight();
-    setTimeout(setWrapHeight, 150);
-  });
-
-  window.addEventListener('resize', () => {
-    if (window.innerWidth > 768) setWrapHeight();
-    else {
-      // Restore on mobile
-      const mc = document.getElementById('main-content');
-      if (mc) mc.style.overflowY = '';
-      const wrap = container.querySelector('.list-table-wrap');
-      if (wrap) wrap.style.height = '';
-    }
-  }, { passive: true });
+  // Zablokuj scroll na #main-content — flex chain zapewnia
+  // że .list-table-wrap wypełni pozostałą przestrzeń i sam scrolluje.
+  // Dzięki temu position:sticky na <thead> działa poprawnie.
+  // Używamy klasy project-view-active (już ustawionej przez navigateTo)
+  // CSS tej klasy blokuje scroll i aktywuje flex chain
 }
 
 function bindListTableInteractions(container, projectId, listCols) {

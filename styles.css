@@ -917,7 +917,7 @@ tr:hover td { background:var(--bg-alt); }
 .list-add-split-menu-item { display:flex; align-items:center; gap:.5rem; width:100%; padding:.55rem .85rem; font-size:.78rem; font-weight:700; font-family:var(--font-body); color:var(--text); background:none; border:none; cursor:pointer; transition:var(--transition); white-space:nowrap; }
 .list-add-split-menu-item:hover { background:var(--bg-alt); }
 
-.project-list-container { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; }
+.project-list-container { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; }
 .list-section { border:none; border-radius:0; overflow:visible; border-bottom:1.5px solid var(--border); }
 .list-section-header { display:flex; align-items:center; justify-content:flex-start; gap:.45rem; padding:.65rem 1.25rem .5rem; background:var(--surface); border-bottom:1.5px solid var(--border); }
 .list-section-title { display:flex; align-items:center; gap:.4rem; font-weight:800; font-size:.82rem; color:var(--text); }
@@ -1131,6 +1131,16 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .header-actions { flex-wrap:wrap; }
 
 #view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
+
+/* When in project list view — lock main-content scroll so flex chain + thead sticky work */
+#main-content.project-view-active {
+  overflow-y: hidden !important;
+}
+#main-content.project-view-active #view-project {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
 
 
 /* ===== PROJECT NOTES TAB ===== */
@@ -2302,6 +2312,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 /* ── List table: scroll in wrap, sticky thead ── */
 .list-table-wrap {
+  flex: 1;
+  min-height: 0;
   overflow-x: auto;
   overflow-y: auto;
   border: 1.5px solid var(--border);
