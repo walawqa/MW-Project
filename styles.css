@@ -901,7 +901,7 @@ tr:hover td { background:var(--bg-alt); }
 .task-feed-item.done .task-feed-title { text-decoration:line-through; }
 
 /* ===== LIST VIEW ===== */
-.project-list-view { background:var(--surface); border:none; border-radius:0; padding:0; display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.project-list-view { background:var(--surface); border:none; border-radius:0; padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
 .project-list-toolbar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.65rem 1.25rem; border-bottom:1.5px solid var(--border); background:var(--surface); flex-shrink:0; }
 .list-search { flex:1; min-width:200px; max-width:320px; padding:.35rem .8rem; border:1.5px solid var(--border); border-radius:999px; background:var(--bg); font-family:var(--font-body); font-size:.78rem; color:var(--text); outline:none; transition:var(--transition); }
 .list-search:focus { border-color:var(--accent); background:var(--surface); box-shadow:0 0 0 3px var(--accent-light); }
@@ -916,14 +916,14 @@ tr:hover td { background:var(--bg-alt); }
 .list-add-split-menu-item { display:flex; align-items:center; gap:.5rem; width:100%; padding:.55rem .85rem; font-size:.78rem; font-weight:700; font-family:var(--font-body); color:var(--text); background:none; border:none; cursor:pointer; transition:var(--transition); white-space:nowrap; }
 .list-add-split-menu-item:hover { background:var(--bg-alt); }
 
-.project-list-container { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; }
+.project-list-container { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; }
 .list-section { border:none; border-radius:0; overflow:visible; border-bottom:1.5px solid var(--border); }
 .list-section-header { display:flex; align-items:center; justify-content:flex-start; gap:.45rem; padding:.65rem 1.25rem .5rem; background:var(--surface); border-bottom:1.5px solid var(--border); }
 .list-section-title { display:flex; align-items:center; gap:.4rem; font-weight:800; font-size:.82rem; color:var(--text); }
 .list-section-count { font-size:.65rem; color:var(--text-muted); background:var(--bg-alt); border:1.5px solid var(--border); padding:.05rem .38rem; border-radius:999px; font-weight:800; }
 
 .list-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-.list-table-wrap { position:relative; overflow-x:auto; overflow-y:auto; flex:1; min-height:0; border:1.5px solid var(--border); border-radius:0 0 var(--radius-sm) var(--radius-sm); }
+.list-table-wrap { position:relative; overflow-x:auto; overflow-y:auto; border:1.5px solid var(--border); border-radius:0 0 var(--radius-sm) var(--radius-sm); }
 .list-thead-sticky th { position:sticky; top:0; z-index:10; background:var(--bg-alt); font-size:.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.07em; font-weight:800; padding:.42rem .75rem; border-bottom:1.5px solid var(--border); border-right:1px solid var(--border); white-space:nowrap; user-select:none; overflow:hidden; }
 .list-thead-sticky th:last-child { border-right:none; }
 .list-table tbody tr td { border-bottom:1px solid var(--border); border-right:1px solid var(--border); }
@@ -1219,7 +1219,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .auth-container { box-sizing:border-box; }
 .header-actions { flex-wrap:wrap; }
 
-#view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+#view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
 
 @media (max-width:768px) {
   .project-header-top { padding:.58rem .8rem .45rem; gap:.4rem; }
@@ -2724,4 +2724,13 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   right: 0;
   background: var(--bg-alt);
   z-index: 3;
+}
+
+/* ── Project view: main-content nie scrolluje — list-table-wrap scrolluje samodzielnie ── */
+#main-content.project-view-active {
+  overflow-y: hidden;
+}
+#main-content.project-view-active #view-project {
+  height: 100%;
+  overflow: hidden;
 }

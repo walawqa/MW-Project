@@ -333,6 +333,10 @@ function navigateTo(view, extraData) {
     document.querySelectorAll('.sidebar-project-item').forEach(el => el.classList.remove('active'));
   }
 
+  // Blokuj scroll #main-content w widoku projektu — list-table-wrap scrolluje samodzielnie
+  const mc = document.getElementById('main-content');
+  if (mc) mc.classList.toggle('project-view-active', view === 'project');
+
   const viewEl = $(`view-${view}`);
   if (viewEl) viewEl.classList.remove('hidden');
 
@@ -2113,22 +2117,20 @@ function renderProjectList(projectId) {
 
   container.innerHTML = `
     <div class="list-table-wrap">
-      <div style="overflow-x:auto;">
-        <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
-          <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
-          <thead class="list-thead-sticky">
-            <tr id="list-header-row">
-              ${headerCells}
+      <table class="list-table" id="list-table" style="table-layout:fixed;width:100%;">
+        <colgroup id="list-colgroup">${colgroupCols}<col style="width:36px;min-width:36px;"></colgroup>
+        <thead class="list-thead-sticky">
+          <tr id="list-header-row">
+            ${headerCells}
               <th class="list-th list-col-settings-th" style="width:36px;min-width:36px;padding:0;text-align:center;">
                 <button class="list-col-settings-btn" id="list-col-settings-btn" title="Dostosuj kolumny">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
               </th>
             </tr>
-          </thead>
-          <tbody>${sectionsHtml}</tbody>
-        </table>
-      </div>
+        </thead>
+        <tbody>${sectionsHtml}</tbody>
+      </table>
     </div>
   `;
 
@@ -2140,8 +2142,24 @@ function renderProjectList(projectId) {
   if (newScrollWrap) {
     newScrollWrap.scrollTop = savedScrollTop;
     newScrollWrap.scrollLeft = savedScrollLeft;
+    // Ustaw wysokość dynamicznie — sticky thead działa tylko gdy list-table-wrap sam scrolluje
+    fitListTableHeight(newScrollWrap);
   }
 }
+
+function fitListTableHeight(wrap) {
+  if (!wrap) return;
+  // Oblicz dostępną wysokość od góry wrapa do dołu ekranu
+  const rect = wrap.getBoundingClientRect();
+  const available = window.innerHeight - rect.top - 8; // 8px oddech od dołu
+  wrap.style.height = Math.max(120, available) + 'px';
+}
+
+// Odśwież wysokość przy zmianie rozmiaru okna
+window.addEventListener('resize', () => {
+  const wrap = document.querySelector('#project-list-view:not(.hidden) .list-table-wrap');
+  if (wrap) fitListTableHeight(wrap);
+}, { passive: true });
 
 function bindListTableInteractions(container, projectId, listCols) {
   // ── Mobile card list interactions ────────────────────────────────────
