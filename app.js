@@ -1159,7 +1159,7 @@ function openProject(projectId) {
   renderKanban(projectId);
   renderProjectList(projectId);
   renderSidebarProjects();
-  populateMobileAssigneeChips?.(projectId);
+  if (typeof populateMobileAssigneeChips === "function") populateMobileAssigneeChips(projectId);
 }
 
 function getFilteredTasks(projectId, opts = {}) {
@@ -3201,8 +3201,11 @@ function subscribeToInbox() {
   );
 
   inboxUnsubscribe = onSnapshot(q, snap => {
+    const hiddenIds = new Set(JSON.parse(localStorage.getItem('inbox_hidden') || '[]'));
     inboxItems = {};
-    snap.forEach(d => { inboxItems[d.id] = { id: d.id, ...d.data() }; });
+    snap.forEach(d => {
+      if (!hiddenIds.has(d.id)) inboxItems[d.id] = { id: d.id, ...d.data() };
+    });
     updateInboxBadge();
     if (document.querySelector('#view-inbox:not(.hidden)')) renderInbox();
   });
@@ -3281,7 +3284,9 @@ function renderInbox() {
   if (!list) return;
 
   // Mark all visible as read when opening
-  const items = Object.values(inboxItems).sort((a, b) => {
+  // Wyklucz lokalnie ukryte wiadomości
+  const hidden = new Set(JSON.parse(localStorage.getItem('inbox_hidden') || '[]'));
+  const items = Object.values(inboxItems).filter(i => !hidden.has(i.id)).sort((a, b) => {
     const ta = a.createdAt?.seconds || 0;
     const tb = b.createdAt?.seconds || 0;
     return tb - ta;
@@ -3354,12 +3359,20 @@ function renderInbox() {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const docId = btn.dataset.id;
+      // Usuń z lokalnego cache natychmiast
+      delete inboxItems[docId];
+      // Zapisz w localStorage żeby nie wróciła po przeładowaniu
       try {
-        await deleteDoc(doc(db, 'inbox', docId));
-        delete inboxItems[docId];
-        renderInbox();
-        updateInboxBadge();
-      } catch(err) { showToast('Nie udało się usunąć', 'error'); }
+        const hidden = JSON.parse(localStorage.getItem('inbox_hidden') || '[]');
+        if (!hidden.includes(docId)) hidden.push(docId);
+        localStorage.setItem('inbox_hidden', JSON.stringify(hidden));
+      } catch(e) {}
+      // Odśwież UI od razu
+      renderInbox();
+      updateInboxBadge();
+      showToast('Wiadomość usunięta', 'success');
+      // Spróbuj usunąć z Firestore w tle
+      try { await deleteDoc(doc(db, 'inbox', docId)); } catch(e) {}
     });
   });
 
