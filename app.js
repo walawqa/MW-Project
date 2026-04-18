@@ -323,6 +323,12 @@ function navigateTo(view, extraData) {
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
+  // Wyczyść podświetlenie projektu w sidebarze gdy wychodzimy z widoku projektu
+  if (view !== 'project') {
+    currentProjectId = null;
+    document.querySelectorAll('.sidebar-project-item').forEach(el => el.classList.remove('active'));
+  }
+
   const viewEl = $(`view-${view}`);
   if (viewEl) viewEl.classList.remove('hidden');
 
@@ -1053,7 +1059,7 @@ function projectCard(p) {
   const total = projTasks.length;
   const done = projTasks.filter(t => isTaskDone(t)).length;
   const progress = total > 0 ? Math.round(done / total * 100) : 0;
-  const overdue = projTasks.filter(t => isOverdue(t.dueDate)).length;
+  const overdue = projTasks.filter(t => !isTaskDone(t) && isOverdue(t.dueDate)).length;
 
   return `
     <div class="project-card" data-id="${p.id}" style="--proj-color:${p.color || '#6B7C5C'}">
@@ -2937,7 +2943,7 @@ function renderStatistics() {
   }
 
   const total = allTasks.length;
-  const overdue = allTasks.filter(t => isOverdue(t.dueDate)).length;
+  const overdue = allTasks.filter(t => !isTaskDone(t) && isOverdue(t.dueDate)).length;
   const high = allTasks.filter(t => t.priority === 'high').length;
 
   let projStats = Object.values(projects).filter(p => !p.archived).map(p => {
