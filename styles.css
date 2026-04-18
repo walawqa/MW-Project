@@ -574,14 +574,15 @@ body {
 .proj-show-done-toggle input { accent-color: var(--accent); cursor: pointer; }
 
 /* KANBAN BOARD */
-.kanban-board { display:flex; gap:.85rem; overflow-x:auto; padding:1.1rem 1.5rem 1.5rem; min-height:500px; align-items:flex-start; }
+.kanban-board { display:flex; gap:.85rem; overflow-x:auto; overflow-y:hidden; padding:1.1rem 1.5rem 1.5rem; align-items:stretch; flex:1; min-height:0; }
 
 /* Kolumny z kolorami Trello-style */
 .kanban-column {
   flex-shrink:0; width:272px; border-radius:var(--radius);
-  display:flex; flex-direction:column; max-height:80vh;
+  display:flex; flex-direction:column;
   border:none; position:relative;
   transition: var(--transition);
+  min-height:0;
 }
 
 /* Kolory kolumn — automatyczne na podstawie nazwy */
@@ -624,6 +625,7 @@ body {
   background:var(--surface); border-radius:var(--radius-sm); padding:.65rem .75rem;
   box-shadow:var(--shadow-sm); border:1.5px solid rgba(0,0,0,.05);
   cursor:pointer; transition:var(--transition); position:relative; overflow:hidden;
+  flex-shrink:0;
 }
 .task-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:#10B981; border-radius:var(--radius-sm) var(--radius-sm) 0 0; }
 .task-card[data-priority="high"]::before { background:#EF4444; }
@@ -899,8 +901,8 @@ tr:hover td { background:var(--bg-alt); }
 .task-feed-item.done .task-feed-title { text-decoration:line-through; }
 
 /* ===== LIST VIEW ===== */
-.project-list-view { background:var(--surface); border:none; border-radius:0; padding:0; }
-.project-list-toolbar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.65rem 1.25rem; border-bottom:1.5px solid var(--border); background:var(--surface); }
+.project-list-view { background:var(--surface); border:none; border-radius:0; padding:0; display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
+.project-list-toolbar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.65rem 1.25rem; border-bottom:1.5px solid var(--border); background:var(--surface); flex-shrink:0; }
 .list-search { flex:1; min-width:200px; max-width:320px; padding:.35rem .8rem; border:1.5px solid var(--border); border-radius:999px; background:var(--bg); font-family:var(--font-body); font-size:.78rem; color:var(--text); outline:none; transition:var(--transition); }
 .list-search:focus { border-color:var(--accent); background:var(--surface); box-shadow:0 0 0 3px var(--accent-light); }
 .list-toggle { display:flex; align-items:center; gap:.35rem; font-size:.75rem; color:var(--text-muted); user-select:none; font-weight:600; }
@@ -914,14 +916,14 @@ tr:hover td { background:var(--bg-alt); }
 .list-add-split-menu-item { display:flex; align-items:center; gap:.5rem; width:100%; padding:.55rem .85rem; font-size:.78rem; font-weight:700; font-family:var(--font-body); color:var(--text); background:none; border:none; cursor:pointer; transition:var(--transition); white-space:nowrap; }
 .list-add-split-menu-item:hover { background:var(--bg-alt); }
 
-.project-list-container { display:flex; flex-direction:column; gap:0; }
+.project-list-container { display:flex; flex-direction:column; gap:0; flex:1; min-height:0; overflow:hidden; }
 .list-section { border:none; border-radius:0; overflow:visible; border-bottom:1.5px solid var(--border); }
 .list-section-header { display:flex; align-items:center; justify-content:flex-start; gap:.45rem; padding:.65rem 1.25rem .5rem; background:var(--surface); border-bottom:1.5px solid var(--border); }
 .list-section-title { display:flex; align-items:center; gap:.4rem; font-weight:800; font-size:.82rem; color:var(--text); }
 .list-section-count { font-size:.65rem; color:var(--text-muted); background:var(--bg-alt); border:1.5px solid var(--border); padding:.05rem .38rem; border-radius:999px; font-weight:800; }
 
 .list-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-.list-table-wrap { position:relative; overflow-x:auto; overflow-y:auto; max-height:calc(100vh - 260px); border:1.5px solid var(--border); border-radius:0 0 var(--radius-sm) var(--radius-sm); }
+.list-table-wrap { position:relative; overflow-x:auto; overflow-y:auto; flex:1; min-height:0; border:1.5px solid var(--border); border-radius:0 0 var(--radius-sm) var(--radius-sm); }
 .list-thead-sticky th { position:sticky; top:0; z-index:10; background:var(--bg-alt); font-size:.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.07em; font-weight:800; padding:.42rem .75rem; border-bottom:1.5px solid var(--border); border-right:1px solid var(--border); white-space:nowrap; user-select:none; overflow:hidden; }
 .list-thead-sticky th:last-child { border-right:none; }
 .list-table tbody tr td { border-bottom:1px solid var(--border); border-right:1px solid var(--border); }
@@ -1020,7 +1022,7 @@ tr:hover td { background:var(--bg-alt); }
 .project-icon-box { width:30px; height:30px; border-radius:var(--radius-sm); background:var(--proj-color,var(--accent)); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:.78rem; }
 #project-title-header { font-size:.98rem; font-weight:800; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .project-header-actions { display:flex; align-items:center; gap:.4rem; flex-shrink:0; }
-.project-dashboard { padding:.85rem 1.25rem; border-bottom:1.5px solid var(--border); background:var(--glass-bg); backdrop-filter:var(--glass-backdrop); }
+.project-dashboard { padding:.85rem 1.25rem; border-bottom:1.5px solid var(--border); background:var(--glass-bg); backdrop-filter:var(--glass-backdrop); flex-shrink:0; }
 
 /* ===== FEED CHECK BUTTON ===== */
 .feed-check-btn { flex-shrink:0; width:18px; height:18px; border-radius:50%; border:2px solid var(--border-strong); background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:border-color .15s, background .15s; color:white; padding:0; }
@@ -1081,7 +1083,7 @@ tr:hover td { background:var(--bg-alt); }
 button, a, .tab-btn, .task-card, .project-card, .nav-item, .task-feed-item, .sidebar-project-item, .project-dropdown-item, .list-row, .mini-cal-day, .cal-day-cell { -webkit-touch-callout: none; }
 button, .tab-btn, .nav-item, .task-card, .project-card { -webkit-user-select: none; user-select: none; }
 input, textarea, [contenteditable], .task-title-input, .comment-input, .note-content { -webkit-user-select: text; user-select: text; }
-.column-tasks, .notes-list, #sidebar, .kanban-board, .modal-panel, .modal-body, .task-modal-body, .project-header-tabs, .stats-grid, .projects-grid, .sidebar-projects, #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.column-tasks, .notes-list, #sidebar, .kanban-board, .project-list-view, .list-table-wrap, .modal-panel, .modal-body, .task-modal-body, .project-header-tabs, .stats-grid, .projects-grid, .sidebar-projects, #view-dashboard, #view-projects, #view-calendar, #view-statistics, #view-notes { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 html { touch-action: manipulation; overflow-x: hidden; }
 body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: none; }
 
@@ -1217,7 +1219,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .auth-container { box-sizing:border-box; }
 .header-actions { flex-wrap:wrap; }
 
-#view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; }
+#view-project { padding:0; display:flex; flex-direction:column; flex:1; min-height:0; overflow:hidden; }
 
 @media (max-width:768px) {
   .project-header-top { padding:.58rem .8rem .45rem; gap:.4rem; }
