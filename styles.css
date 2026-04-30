@@ -3199,3 +3199,13 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   .tab-btn span { display: none; }
   .tab-btn svg { width: 22px; height: 22px; }
 }
+
+/* ===== ATTACHMENT BADGE ON CARDS ===== */
+.card-attach-badge {
+  display: inline-flex; align-items: center; gap: .2rem;
+  font-size: .68rem; font-weight: 600; color: var(--text-muted);
+  background: var(--bg-alt); border: 1px solid var(--border);
+  border-radius: 999px; padding: .1rem .4rem;
+  line-height: 1; flex-shrink: 0;
+}
+.card-attach-badge svg { flex-shrink: 0; }

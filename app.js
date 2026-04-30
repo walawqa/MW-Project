@@ -1298,6 +1298,7 @@ function taskCard(t) {
         ${t.priority === 'high' ? '<span class="task-card-prio-high">Wysoki</span>' : ''}
         ${t.assigneeName ? `<div class="task-card-assignee">${getInitials(t.assigneeName)}</div>` : ''}
         ${doneTask ? `<span class="task-done-badge"> Zakończone</span>` : ''}
+        ${(t.attachments && t.attachments.length) ? `<span class="card-attach-badge" title="${t.attachments.length} załącznik(i)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${t.attachments.length}</span>` : ''}
       </div>
       ${checklist.length > 0 ? `
         <div class="task-checklist-progress">
@@ -2100,6 +2101,7 @@ function renderProjectList(projectId) {
                   <span class="mlist-prio-dot" style="background:${prColor}"></span>
                   ${dueStr ? `<span class="mlist-due ${over?'overdue':''}">${over ? '' : ''}${dueStr}</span>` : ''}
                   ${initials ? `<span class="mlist-avatar" style="background:${avColor}">${initials}</span>` : ''}
+                  ${(t.attachments && t.attachments.length) ? `<span class="card-attach-badge" title="${t.attachments.length} załącznik(i)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${t.attachments.length}</span>` : ''}
                 </div>
               </div>
               <div class="mlist-drag"><span class="list-drag-handle">⠿</span></div>
@@ -4635,7 +4637,9 @@ function renderMeetingsList(projectId) {
     return `<div class="pnotes-meeting-item ${currentMeetingId === m.id ? 'active' : ''}" data-id="${m.id}">
       <div class="pnotes-meeting-item-title">${escHtml(m.title || 'Bez tytułu')}</div>
       ${dateStr ? `<div class="pnotes-meeting-item-date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${dateStr}</div>` : ''}
-      <div class="pnotes-meeting-item-preview">${escHtml((m.description || '').slice(0, 60))}</div>
+      <div class="pnotes-meeting-item-preview" style="display:flex;align-items:center;gap:.35rem;">${escHtml((m.description || '').slice(0, 60))}
+        ${(m.attachments && m.attachments.length) ? `<span class="card-attach-badge" title="${m.attachments.length} załącznik(i)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${m.attachments.length}</span>` : ''}
+      </div>
     </div>`;
   }).join('');
   container.querySelectorAll('.pnotes-meeting-item').forEach(el => {
@@ -4880,7 +4884,9 @@ function renderPNotesList(projectId) {
     <div class="pnotes-note-item ${currentProjNoteId === n.id ? 'active' : ''}" data-id="${n.id}">
       <div class="pnotes-note-item-title">${escHtml(n.title || 'Bez tytułu')}</div>
       <span class="pnotes-note-item-cat ${n.category || 'general'}">${catLabels[n.category] || 'Ogólna'}</span>
-      <div class="pnotes-note-item-date">${n.updatedAt ? new Date(n.updatedAt.toDate()).toLocaleDateString('pl-PL') : ''}</div>
+      <div class="pnotes-note-item-date" style="display:flex;align-items:center;gap:.35rem;">${n.updatedAt ? new Date(n.updatedAt.toDate()).toLocaleDateString('pl-PL') : ''}
+        ${(n.attachments && n.attachments.length) ? `<span class="card-attach-badge" title="${n.attachments.length} załącznik(i)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> ${n.attachments.length}</span>` : ''}
+      </div>
     </div>`).join('');
   container.querySelectorAll('.pnotes-note-item').forEach(el => {
     el.addEventListener('click', () => openPNoteEditor(projectId, el.dataset.id));
