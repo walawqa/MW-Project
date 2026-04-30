@@ -1557,7 +1557,7 @@ body { touch-action: manipulation; overflow-x: hidden; overscroll-behavior-x: no
 .file-preview-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .file-preview-modal.hidden { display: none; }
 .file-preview-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.82); backdrop-filter: blur(6px); cursor: pointer; }
-.file-preview-container { position: relative; z-index: 1; width: 100%; max-width: 900px; max-height: calc(100vh - 2rem); display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; animation: modalIn .18s ease; }
+.file-preview-container { position: relative; z-index: 1; width: 100%; max-width: 900px; height: calc(100vh - 2rem); max-height: calc(100vh - 2rem); display: flex; flex-direction: column; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-lg); overflow: hidden; animation: modalIn .18s ease; }
 .file-preview-header { display: flex; align-items: center; justify-content: space-between; padding: .7rem 1rem; border-bottom: 1.5px solid var(--border); gap: .5rem; flex-shrink: 0; }
 .file-preview-title { font-size: .82rem; font-weight: 700; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
 .file-preview-actions { display: flex; gap: .4rem; flex-shrink: 0; }
