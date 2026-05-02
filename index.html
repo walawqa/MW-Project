@@ -225,12 +225,16 @@
               <span class="dash-my-tasks-title">Moje zadania</span>
             </div>
             <div class="dash-task-tabs">
-              <button class="dash-tab active" data-tab="upcoming">Nadchodzące</button>
+              <button class="dash-tab active" data-tab="all">Wszystkie</button>
+              <button class="dash-tab" data-tab="upcoming">Nadchodzące</button>
               <button class="dash-tab" data-tab="overdue">Zaległe</button>
               <button class="dash-tab" data-tab="done">Ukończone</button>
             </div>
           </div>
-          <div id="dash-tab-upcoming" class="dash-tab-panel">
+          <div id="dash-tab-all" class="dash-tab-panel">
+            <div id="all-list" class="task-feed"></div>
+          </div>
+          <div id="dash-tab-upcoming" class="dash-tab-panel hidden">
             <div id="upcoming-list" class="task-feed"></div>
           </div>
           <div id="dash-tab-overdue" class="dash-tab-panel hidden">
