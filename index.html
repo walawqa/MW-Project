@@ -223,6 +223,9 @@
             <div class="dash-user-row">
               <div class="user-avatar" id="dash-user-avatar">U</div>
               <span class="dash-my-tasks-title">Moje zadania</span>
+              <button class="btn-icon dash-add-task-btn" id="dash-add-personal-task-btn" title="Dodaj zadanie">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              </button>
             </div>
             <div class="dash-task-tabs">
               <button class="dash-tab active" data-tab="all">Wszystkie</button>
@@ -1367,6 +1370,42 @@
     <div class="quick-add-footer">
       <button class="quick-add-cancel" id="add-task-confirm-cancel">Anuluj</button>
       <button class="quick-add-submit" id="add-task-confirm-ok">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Dodaj zadanie
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Personal Task Modal -->
+<div id="add-personal-task-modal" class="modal hidden">
+  <div class="modal-overlay" id="add-personal-task-overlay"></div>
+  <div class="quick-add-panel">
+    <div class="quick-add-header">
+      <div class="quick-add-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </div>
+      <span class="quick-add-title">Nowe zadanie</span>
+    </div>
+    <div class="quick-add-body" style="display:flex;flex-direction:column;gap:.65rem;">
+      <input id="personal-task-title" type="text" class="quick-add-input" placeholder="Nazwa zadania..." autocomplete="off" />
+      <div class="personal-task-meta">
+        <label class="personal-task-label">Termin (opcjonalnie)</label>
+        <input id="personal-task-due" type="date" class="quick-add-input" style="font-size:.82rem;" />
+      </div>
+      <div class="personal-task-meta">
+        <label class="personal-task-label">Priorytet</label>
+        <select id="personal-task-priority" class="select-input">
+          <option value="low">Niski</option>
+          <option value="medium" selected>Średni</option>
+          <option value="high">Wysoki</option>
+          <option value="critical">Krytyczny</option>
+        </select>
+      </div>
+    </div>
+    <div class="quick-add-footer">
+      <button class="quick-add-cancel" id="personal-task-cancel">Anuluj</button>
+      <button class="quick-add-submit" id="personal-task-ok">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Dodaj zadanie
       </button>

@@ -522,7 +522,49 @@ function subscribeToTasks(projectId) {
   taskListeners[projectId] = unsub;
 }
 
-async function createProject(name, desc, deadline, color) {
+function subscribeToPersonalTasks() {
+  if (taskListeners['__personal__']) return;
+  const q = query(
+    collection(db, 'tasks'),
+    where('projectId', '==', null),
+    where('createdBy', '==', currentUser.uid)
+  );
+  const unsub = onSnapshot(q, snap => {
+    if (!tasks['__personal__']) tasks['__personal__'] = {};
+    snap.docChanges().forEach(change => {
+      if (change.type === 'removed') {
+        delete tasks['__personal__'][change.doc.id];
+      } else {
+        tasks['__personal__'][change.doc.id] = { id: change.doc.id, ...change.doc.data() };
+      }
+    });
+    if (document.querySelector('#view-dashboard:not(.hidden)')) {
+      renderDashboardStats();
+      renderDashboardTasks();
+    }
+  });
+  taskListeners['__personal__'] = unsub;
+}
+
+async function createPersonalTask(title, dueDate, priority) {
+  const taskRef = await addDoc(collection(db, 'tasks'), {
+    projectId: null,
+    columnId: null,
+    title,
+    status: 'open',
+    desc: '',
+    priority: priority || 'medium',
+    dueDate: dueDate || null,
+    assigneeId: currentUser.uid,
+    assigneeName: currentUser.displayName || 'Użytkownik',
+    checklist: [], attachments: [], comments: [],
+    history: [{ action: 'Zadanie utworzone', by: currentUser.displayName || 'Użytkownik', at: new Date().toISOString() }],
+    createdAt: serverTimestamp(),
+    createdBy: currentUser.uid,
+    createdByName: currentUser.displayName || 'Użytkownik'
+  });
+  return taskRef.id;
+}
   const projRef = await addDoc(collection(db, 'projects'), {
     name, desc, deadline: deadline || null, color,
     ownerId: currentUser.uid,
@@ -4011,6 +4053,37 @@ function setupEventListeners() {
   $('new-project-btn').addEventListener('click', openCreateProjectModal);
   $('show-archived-btn').addEventListener('click', toggleArchivedView);
 
+  // Personal task (dashboard)
+  function openPersonalTaskModal() {
+    $('personal-task-title').value = '';
+    $('personal-task-due').value = '';
+    $('personal-task-priority').value = 'medium';
+    openModal('add-personal-task-modal');
+    setTimeout(() => $('personal-task-title')?.focus(), 80);
+  }
+  function closePersonalTaskModal() { closeModal('add-personal-task-modal'); }
+  async function submitPersonalTask() {
+    const title = $('personal-task-title')?.value?.trim();
+    if (!title) { $('personal-task-title')?.focus(); return; }
+    const dueDate = $('personal-task-due')?.value || null;
+    const priority = $('personal-task-priority')?.value || 'medium';
+    try {
+      $('personal-task-ok').disabled = true;
+      await createPersonalTask(title, dueDate, priority);
+      closePersonalTaskModal();
+      showToast('Zadanie dodane');
+    } catch(err) {
+      showToast('Nie udało się dodać zadania', 'error');
+    } finally {
+      $('personal-task-ok').disabled = false;
+    }
+  }
+  $('dash-add-personal-task-btn')?.addEventListener('click', openPersonalTaskModal);
+  $('personal-task-cancel')?.addEventListener('click', closePersonalTaskModal);
+  $('add-personal-task-overlay')?.addEventListener('click', closePersonalTaskModal);
+  $('personal-task-ok')?.addEventListener('click', submitPersonalTask);
+  $('personal-task-title')?.addEventListener('keydown', e => { if (e.key === 'Enter') submitPersonalTask(); });
+
   // Project modal
   $('save-project-btn').addEventListener('click', saveProjectModal);
   $('cancel-project-modal').addEventListener('click', () => closeModal('project-modal'));
@@ -4521,6 +4594,7 @@ async function initApp() {
       updateUserUI();
       showApp();
       subscribeToProjects();
+      subscribeToPersonalTasks();
       subscribeToNotes();
       subscribeToInbox();
       startClock();
