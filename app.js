@@ -565,6 +565,8 @@ async function createPersonalTask(title, dueDate, priority) {
   });
   return taskRef.id;
 }
+
+async function createProject(name, desc, deadline, color) {
   const projRef = await addDoc(collection(db, 'projects'), {
     name, desc, deadline: deadline || null, color,
     ownerId: currentUser.uid,
