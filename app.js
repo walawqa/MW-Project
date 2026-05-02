@@ -205,6 +205,144 @@ function generateId() {
   return Math.random().toString(36).substr(2, 9);
 }
 
+// ============================================================
+// RECURRENCE HELPERS
+// ============================================================
+
+function calculateNextRecurrenceDue(recurrence, fromDate) {
+  const from = new Date(fromDate || new Date());
+  from.setHours(0, 0, 0, 0);
+  if (recurrence.type === 'interval') {
+    const next = new Date(from);
+    next.setDate(next.getDate() + Math.max(1, recurrence.intervalDays || 7));
+    return next.toISOString().split('T')[0];
+  }
+  if (recurrence.type === 'weekly') {
+    const target = Number(recurrence.dayOfWeek);
+    const next = new Date(from);
+    next.setDate(next.getDate() + 1);
+    while (next.getDay() !== target) next.setDate(next.getDate() + 1);
+    return next.toISOString().split('T')[0];
+  }
+  if (recurrence.type === 'monthly') {
+    const day = Math.min(Math.max(1, recurrence.dayOfMonth || 1), 28);
+    const candidate = new Date(from.getFullYear(), from.getMonth(), day);
+    if (candidate > from) return candidate.toISOString().split('T')[0];
+    const next = new Date(from.getFullYear(), from.getMonth() + 1, day);
+    return next.toISOString().split('T')[0];
+  }
+  if (recurrence.type === 'weekday_monthly') {
+    const targetDay = Number(recurrence.dayOfWeek);
+    const occ = Number(recurrence.weekOccurrence);
+    function getNth(year, month) {
+      if (occ === -1) {
+        const d = new Date(year, month + 1, 0);
+        while (d.getDay() !== targetDay) d.setDate(d.getDate() - 1);
+        return new Date(d);
+      }
+      const first = new Date(year, month, 1);
+      let diff = targetDay - first.getDay();
+      if (diff < 0) diff += 7;
+      return new Date(year, month, 1 + diff + (occ - 1) * 7);
+    }
+    let c = getNth(from.getFullYear(), from.getMonth());
+    if (c > from) return c.toISOString().split('T')[0];
+    let nm = from.getMonth() + 1, ny = from.getFullYear();
+    if (nm > 11) { nm = 0; ny++; }
+    return getNth(ny, nm).toISOString().split('T')[0];
+  }
+  return null;
+}
+
+function recurrenceLabel(rec) {
+  if (!rec || !rec.type) return '';
+  const days = ['Nd','Pn','Wt','Śr','Cz','Pt','Sb'];
+  const occL  = {'1':'1.','2':'2.','3':'3.','4':'4.','-1':'Ost.'};
+  if (rec.type === 'weekly')          return `Co tydz. (${days[rec.dayOfWeek] || ''})`;
+  if (rec.type === 'monthly')         return `Co mies. (${rec.dayOfMonth}.)`;
+  if (rec.type === 'interval')        return `Co ${rec.intervalDays} dni`;
+  if (rec.type === 'weekday_monthly') return `${occL[rec.weekOccurrence]||''} ${days[rec.dayOfWeek]||''}/mies.`;
+  return '';
+}
+
+async function completeTaskWithRecurrence(taskId) {
+  const task = getTaskById(taskId);
+  if (!task) return;
+  const rec = task.recurrence;
+  if (!rec || !rec.type) {
+    await updateTask(taskId, { status: 'done' }, { action: 'Oznaczono jako zakończone' });
+    return;
+  }
+  const nextDue = calculateNextRecurrenceDue(rec, new Date());
+  const existingHistory = task.history || [];
+  const newEntry = {
+    action: 'Ukończono cykl — następny termin: ' + (formatDate(nextDue) || '—'),
+    by: currentUser ? (currentUser.displayName || 'Użytkownik') : 'Użytkownik',
+    at: new Date().toISOString()
+  };
+  await updateDoc(doc(db, 'tasks', taskId), {
+    status: 'open',
+    dueDate: nextDue,
+    'recurrence.lastReset': new Date().toISOString().split('T')[0],
+    history: [...existingHistory, newEntry],
+    updatedAt: serverTimestamp()
+  });
+  showToast('Ukończono! Następny: ' + (formatDate(nextDue) || '—'), 'success');
+}
+
+function getRecurrenceFromTaskModal() {
+  const type = $('task-recurrence-type') ? $('task-recurrence-type').value : '';
+  if (!type) return null;
+  const taskData = currentTaskId ? getTaskById(currentTaskId) : null;
+  return {
+    type,
+    dayOfWeek:      (type === 'weekly' || type === 'weekday_monthly') ? Number($('rec-day-of-week').value || 1) : null,
+    dayOfMonth:     type === 'monthly'          ? Number($('rec-day-of-month').value  || 1)  : null,
+    intervalDays:   type === 'interval'         ? Number($('rec-interval-days').value  || 7)  : null,
+    weekOccurrence: type === 'weekday_monthly'  ? Number($('rec-week-occurrence').value || 1) : null,
+    lastReset: taskData && taskData.recurrence ? (taskData.recurrence.lastReset || null) : null
+  };
+}
+
+function getRecurrenceFromDashModal() {
+  const type = $('personal-rec-type') ? $('personal-rec-type').value : '';
+  if (!type) return null;
+  return {
+    type,
+    dayOfWeek:      (type === 'weekly' || type === 'weekday_monthly') ? Number($('personal-rec-dow').value || 1) : null,
+    dayOfMonth:     type === 'monthly'         ? Number($('personal-rec-dom').value  || 1)  : null,
+    intervalDays:   type === 'interval'        ? Number($('personal-rec-interval').value || 7) : null,
+    weekOccurrence: type === 'weekday_monthly' ? Number($('personal-rec-wocc').value || 1) : null,
+    lastReset: null
+  };
+}
+
+function populateRecurrenceFields(rec) {
+  const typeEl = $('task-recurrence-type');
+  if (!typeEl) return;
+  typeEl.value = (rec && rec.type) ? rec.type : '';
+  toggleRecurrenceOpts('task');
+  if (!rec) return;
+  if (rec.dayOfWeek != null)      $('rec-day-of-week').value = rec.dayOfWeek;
+  if (rec.dayOfMonth != null)     $('rec-day-of-month').value = rec.dayOfMonth;
+  if (rec.intervalDays != null)   $('rec-interval-days').value = rec.intervalDays;
+  if (rec.weekOccurrence != null) {
+    $('rec-week-occurrence').value = rec.weekOccurrence;
+    $('rec-weekday-monthly-day').value = rec.dayOfWeek != null ? rec.dayOfWeek : 1;
+  }
+}
+
+function toggleRecurrenceOpts(prefix) {
+  const isTask = (prefix === 'task');
+  const type = isTask ? ($('task-recurrence-type') ? $('task-recurrence-type').value : '') : ($('personal-rec-type') ? $('personal-rec-type').value : '');
+  const ids = isTask
+    ? { weekly:'rec-weekly-opts', monthly:'rec-monthly-opts', weekday_monthly:'rec-weekday-monthly-opts', interval:'rec-interval-opts' }
+    : { weekly:'prec-weekly-opts', monthly:'prec-monthly-opts', weekday_monthly:'prec-weekday-monthly-opts', interval:'prec-interval-opts' };
+  Object.values(ids).forEach(function(id){ var el = $(id); if(el) el.classList.add('hidden'); });
+  if (type && ids[type]) { var show = $(ids[type]); if(show) show.classList.remove('hidden'); }
+}
+
+
 function showConfirm(title, msg, cb) {
   $('confirm-title').textContent = title;
   $('confirm-message').textContent = msg;
@@ -944,10 +1082,13 @@ function renderDashboardTasks() {
         e.stopPropagation();
         const task = getTaskById(btn.dataset.id);
         if (!task) return;
-        const newStatus = isTaskDone(task) ? 'open' : 'done';
-        try {
-          await updateTask(btn.dataset.id, { status: newStatus }, { action: newStatus === 'done' ? 'Oznaczono jako zakończone' : 'Przywrócono jako otwarte' });
-        } catch(err) { showToast('Nie udało się zmienić statusu', 'error'); }
+        if (isTaskDone(task)) {
+          try { await updateTask(btn.dataset.id, { status: 'open' }, { action: 'Przywrócono jako otwarte' }); }
+          catch(err) { showToast('Nie udało się zmienić statusu', 'error'); }
+        } else {
+          try { await completeTaskWithRecurrence(btn.dataset.id); }
+          catch(err) { showToast('Nie udało się zmienić statusu', 'error'); }
+        }
       });
     });
   };
@@ -1009,12 +1150,14 @@ function taskFeedItem(t) {
   const overdue = isOverdue(t.dueDate);
   const doneTask = isTaskDone(t);
   const proj = projects[t.projectId];
+  const rec = t.recurrence;
   return `
     <div class="task-feed-item ${overdue ? 'overdue' : ''} ${doneTask ? 'done' : ''}" data-id="${t.id}" data-project="${t.projectId}">
       <button class="feed-check-btn ${doneTask ? 'checked' : ''}" data-id="${t.id}" data-project="${t.projectId}" title="${doneTask ? 'Przywróć zadanie' : 'Oznacz jako zakończone'}">
         ${doneTask ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
       </button>
       <span class="task-feed-title">${t.title}</span>
+      ${rec?.type ? `<span class="task-feed-rec" title="${recurrenceLabel(rec)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="11" height="11"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg></span>` : ''}
       ${proj ? `<span class="task-feed-project">${proj.name}</span>` : ''}
       ${t.dueDate ? `<span class="task-feed-due ${overdue ? 'overdue' : ''}">${formatDate(t.dueDate)}</span>` : ''}
     </div>`;
@@ -1420,6 +1563,7 @@ async function openTaskModal(taskId, projectId) {
   $('task-project-name').textContent = proj?.name || '—';
   $('task-priority-select').value = task.priority || 'medium';
   $('task-due-date').value = task.dueDate || '';
+  populateRecurrenceFields(task.recurrence || null);
 
   // Task status (open/done)
   const stateSelect = $('task-state-select');
@@ -1630,6 +1774,7 @@ async function saveTask() {
   if (task.dueDate !== newDueDate) history.push({ action: `Zmieniono termin na "${formatDate(newDueDate)}"` });
   if (task.assigneeId !== newAssigneeId) history.push({ action: `Przypisano do "${newAssigneeName || 'brak'}"` });
 
+  const newRecurrence = getRecurrenceFromTaskModal();
   const updates = {
     title: newTitle,
     desc: newDesc,
@@ -1639,11 +1784,15 @@ async function saveTask() {
     status: newStatus,
     assigneeId: newAssigneeId || null,
     assigneeName: newAssigneeName,
-    checklist: getCurrentChecklist()
+    checklist: getCurrentChecklist(),
+    recurrence: newRecurrence
   };
 
   const existingHistory = task.history || [];
   const byEntry = h => ({ ...h, by: currentUser.displayName || 'Użytkownik', at: new Date().toISOString() });
+  if (JSON.stringify(task.recurrence) !== JSON.stringify(newRecurrence)) {
+    history.push({ action: newRecurrence ? ('Ustawiono cykliczność: ' + recurrenceLabel(newRecurrence)) : 'Usunięto cykliczność' });
+  }
   updates.history = [...existingHistory, ...history.map(byEntry)];
 
   await updateDoc(doc(db, 'tasks', taskId), updates);
@@ -1696,7 +1845,8 @@ async function autoSaveTask() {
     status: newStatus,
     assigneeId: newAssigneeId || null,
     assigneeName: newAssigneeName,
-    checklist: getCurrentChecklist()
+    checklist: getCurrentChecklist(),
+    recurrence: getRecurrenceFromTaskModal()
   };
 
   if (history.length) {
@@ -2253,8 +2403,8 @@ function bindListTableInteractions(container, projectId, listCols) {
     cb.addEventListener('click', async e => {
       e.stopPropagation();
       const taskId = cb.dataset.id;
-      const newStatus = cb.checked ? 'done' : 'open';
-      await updateTask(taskId, { status: newStatus }, { action: newStatus === 'done' ? 'Oznaczono jako zakończone' : 'Przywrócono' });
+      if (cb.checked) { await completeTaskWithRecurrence(taskId); }
+      else { await updateTask(taskId, { status: 'open' }, { action: 'Przywrócono' }); }
     });
   });
   // ─────────────────────────────────────────────────────────────────────
@@ -2467,9 +2617,9 @@ function bindListTableInteractions(container, projectId, listCols) {
     cb.addEventListener('click', async (e) => {
       e.stopPropagation();
       const taskId = cb.dataset.id;
-      const newStatus = cb.checked ? 'done' : 'open';
       try {
-        await updateTask(taskId, { status: newStatus }, { action: newStatus === 'done' ? 'Oznaczono jako zakończone' : 'Przywrócono jako otwarte' });
+        if (cb.checked) { await completeTaskWithRecurrence(taskId); }
+        else { await updateTask(taskId, { status: 'open' }, { action: 'Przywrócono jako otwarte' }); }
       } catch(err) { showToast('Nie udało się zmienić statusu', 'error'); }
     });
   });
@@ -4086,12 +4236,14 @@ function setupEventListeners() {
     const columnId = proj?.columns?.[0]?.id || null;
     const dueDate = $('personal-task-due')?.value || null;
     const priority = $('personal-task-priority')?.value || 'medium';
+    const recurrence = getRecurrenceFromDashModal();
     try {
       $('personal-task-ok').disabled = true;
       const newId = await createTask(projectId, columnId, title);
       await updateTask(newId, {
         dueDate,
         priority,
+        recurrence: recurrence || null,
         assigneeId: currentUser.uid,
         assigneeName: currentUser.displayName || 'Użytkownik'
       }, null);
@@ -4108,6 +4260,8 @@ function setupEventListeners() {
   $('add-personal-task-overlay')?.addEventListener('click', closePersonalTaskModal);
   $('personal-task-ok')?.addEventListener('click', submitPersonalTask);
   $('personal-task-title')?.addEventListener('keydown', e => { if (e.key === 'Enter') submitPersonalTask(); });
+  $('personal-rec-type')?.addEventListener('change', () => toggleRecurrenceOpts('dash'));
+  $('task-recurrence-type')?.addEventListener('change', () => toggleRecurrenceOpts('task'));
 
   // Project modal
   $('save-project-btn').addEventListener('click', saveProjectModal);

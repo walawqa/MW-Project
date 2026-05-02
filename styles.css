@@ -1045,6 +1045,10 @@ tr:hover td { background:var(--bg-alt); }
 .dash-add-task-btn:hover { background:var(--accent); border-color:var(--accent); color:#fff; }
 .personal-task-meta { display:flex; flex-direction:column; gap:.3rem; }
 .personal-task-label { font-size:.74rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+.rec-opts { display:flex; flex-direction:column; gap:.3rem; }
+.rec-opts.hidden { display:none; }
+.task-feed-rec { display:inline-flex; align-items:center; color:var(--accent); opacity:.8; flex-shrink:0; margin-left:-.1rem; }
+.task-meta-item .rec-opts { margin-top:.35rem; }
 .dash-my-tasks-title { font-size:.95rem; font-weight:800; color:var(--text); }
 .dash-task-tabs { display:flex; gap:0; border-bottom:none; }
 .dash-tab { background:none; border:none; border-bottom:2.5px solid transparent; padding:.42rem .8rem; font-family:var(--font-body); font-size:.78rem; font-weight:700; color:var(--text-muted); cursor:pointer; transition:color .15s, border-color .15s; white-space:nowrap; }

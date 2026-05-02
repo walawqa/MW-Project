@@ -837,6 +837,47 @@
           <label>Termin</label>
           <input type="date" id="task-due-date" class="select-input" />
         </div>
+        <!-- Recurrence -->
+        <div class="task-meta-item">
+          <label>Cykliczność</label>
+          <select id="task-recurrence-type" class="select-input">
+            <option value="">Brak</option>
+            <option value="weekly">Co tydzień</option>
+            <option value="monthly">Co miesiąc (dzień)</option>
+            <option value="weekday_monthly">Co miesiąc (dzień tyg.)</option>
+            <option value="interval">Co X dni</option>
+          </select>
+          <div id="rec-weekly-opts" class="rec-opts hidden">
+            <select id="rec-day-of-week" class="select-input" style="margin-top:.4rem;">
+              <option value="1">Poniedziałek</option>
+              <option value="2">Wtorek</option>
+              <option value="3">Środa</option>
+              <option value="4">Czwartek</option>
+              <option value="5">Piątek</option>
+              <option value="6">Sobota</option>
+              <option value="0">Niedziela</option>
+            </select>
+          </div>
+          <div id="rec-monthly-opts" class="rec-opts hidden">
+            <input id="rec-day-of-month" type="number" min="1" max="28" class="select-input" style="margin-top:.4rem;" placeholder="Dzień (1–28)" />
+          </div>
+          <div id="rec-weekday-monthly-opts" class="rec-opts hidden">
+            <select id="rec-week-occurrence" class="select-input" style="margin-top:.4rem;">
+              <option value="1">1.</option><option value="2">2.</option><option value="3">3.</option><option value="4">4.</option><option value="-1">Ostatni</option>
+            </select>
+            <select id="rec-weekday-monthly-day" class="select-input" style="margin-top:.3rem;">
+              <option value="1">Poniedziałek</option><option value="2">Wtorek</option><option value="3">Środa</option>
+              <option value="4">Czwartek</option><option value="5">Piątek</option><option value="6">Sobota</option><option value="0">Niedziela</option>
+            </select>
+          </div>
+          <div id="rec-interval-opts" class="rec-opts hidden">
+            <div style="display:flex;align-items:center;gap:.4rem;margin-top:.4rem;">
+              <span style="font-size:.75rem;color:var(--text-muted);">Co</span>
+              <input id="rec-interval-days" type="number" min="1" max="365" class="select-input" style="width:58px;" placeholder="7" />
+              <span style="font-size:.75rem;color:var(--text-muted);">dni</span>
+            </div>
+          </div>
+        </div>
         <!-- Project -->
         <div class="task-meta-item">
           <label>Projekt</label>
@@ -1407,6 +1448,41 @@
           <option value="high">Wysoki</option>
           <option value="critical">Krytyczny</option>
         </select>
+      </div>
+      <div class="personal-task-meta">
+        <label class="personal-task-label">Cykliczność (opcjonalnie)</label>
+        <select id="personal-rec-type" class="select-input">
+          <option value="">Brak</option>
+          <option value="weekly">Co tydzień</option>
+          <option value="monthly">Co miesiąc (dzień)</option>
+          <option value="weekday_monthly">Co miesiąc (dzień tyg.)</option>
+          <option value="interval">Co X dni</option>
+        </select>
+        <div id="prec-weekly-opts" class="rec-opts hidden" style="margin-top:.35rem;">
+          <select id="personal-rec-dow" class="select-input">
+            <option value="1">Poniedziałek</option><option value="2">Wtorek</option><option value="3">Środa</option>
+            <option value="4">Czwartek</option><option value="5">Piątek</option><option value="6">Sobota</option><option value="0">Niedziela</option>
+          </select>
+        </div>
+        <div id="prec-monthly-opts" class="rec-opts hidden" style="margin-top:.35rem;">
+          <input id="personal-rec-dom" type="number" min="1" max="28" class="select-input" placeholder="Dzień miesiąca (1–28)" />
+        </div>
+        <div id="prec-weekday-monthly-opts" class="rec-opts hidden" style="margin-top:.35rem;">
+          <select id="personal-rec-wocc" class="select-input">
+            <option value="1">1.</option><option value="2">2.</option><option value="3">3.</option><option value="4">4.</option><option value="-1">Ostatni</option>
+          </select>
+          <select id="personal-rec-wday" class="select-input" style="margin-top:.3rem;">
+            <option value="1">Poniedziałek</option><option value="2">Wtorek</option><option value="3">Środa</option>
+            <option value="4">Czwartek</option><option value="5">Piątek</option><option value="6">Sobota</option><option value="0">Niedziela</option>
+          </select>
+        </div>
+        <div id="prec-interval-opts" class="rec-opts hidden" style="margin-top:.35rem;">
+          <div style="display:flex;align-items:center;gap:.4rem;">
+            <span style="font-size:.75rem;color:var(--text-muted);">Co</span>
+            <input id="personal-rec-interval" type="number" min="1" max="365" class="select-input" style="width:58px;" placeholder="7" />
+            <span style="font-size:.75rem;color:var(--text-muted);">dni</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="quick-add-footer">
