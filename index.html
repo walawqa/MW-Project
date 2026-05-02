@@ -1390,6 +1390,12 @@
     <div class="quick-add-body" style="display:flex;flex-direction:column;gap:.65rem;">
       <input id="personal-task-title" type="text" class="quick-add-input" placeholder="Nazwa zadania..." autocomplete="off" />
       <div class="personal-task-meta">
+        <label class="personal-task-label">Projekt <span style="color:var(--danger,#E74C3C)">*</span></label>
+        <select id="personal-task-project" class="select-input">
+          <option value="">— Wybierz projekt —</option>
+        </select>
+      </div>
+      <div class="personal-task-meta">
         <label class="personal-task-label">Termin (opcjonalnie)</label>
         <input id="personal-task-due" type="date" class="quick-add-input" style="font-size:.82rem;" />
       </div>

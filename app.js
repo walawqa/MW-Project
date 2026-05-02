@@ -4060,6 +4060,15 @@ function setupEventListeners() {
     $('personal-task-title').value = '';
     $('personal-task-due').value = '';
     $('personal-task-priority').value = 'medium';
+    // Populate project select with user's projects
+    const sel = $('personal-task-project');
+    sel.innerHTML = '<option value="">— Wybierz projekt —</option>';
+    Object.values(projects)
+      .filter(p => !p.archived)
+      .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'pl'))
+      .forEach(p => {
+        sel.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
     openModal('add-personal-task-modal');
     setTimeout(() => $('personal-task-title')?.focus(), 80);
   }
@@ -4067,11 +4076,25 @@ function setupEventListeners() {
   async function submitPersonalTask() {
     const title = $('personal-task-title')?.value?.trim();
     if (!title) { $('personal-task-title')?.focus(); return; }
+    const projectId = $('personal-task-project')?.value;
+    if (!projectId) {
+      $('personal-task-project')?.focus();
+      showToast('Wybierz projekt', 'error');
+      return;
+    }
+    const proj = projects[projectId];
+    const columnId = proj?.columns?.[0]?.id || null;
     const dueDate = $('personal-task-due')?.value || null;
     const priority = $('personal-task-priority')?.value || 'medium';
     try {
       $('personal-task-ok').disabled = true;
-      await createPersonalTask(title, dueDate, priority);
+      const newId = await createTask(projectId, columnId, title);
+      await updateTask(newId, {
+        dueDate,
+        priority,
+        assigneeId: currentUser.uid,
+        assigneeName: currentUser.displayName || 'Użytkownik'
+      }, null);
       closePersonalTaskModal();
       showToast('Zadanie dodane');
     } catch(err) {
