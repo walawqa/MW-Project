@@ -4710,11 +4710,15 @@ function isMobile() {
 function initMobile() {
   // Enforce mobile layout — hide sidebar, show tab bar
   function applyMobileLayout() {
+    const sidebar = document.getElementById('sidebar');
+    const tabBar = document.getElementById('bottom-tab-bar');
     if (isMobile()) {
-      const sidebar = document.getElementById('sidebar');
       if (sidebar) sidebar.style.display = 'none';
-      const tabBar = document.getElementById('bottom-tab-bar');
       if (tabBar) tabBar.style.display = 'flex';
+    } else {
+      // Reset inline styles — let CSS media queries take over
+      if (sidebar) sidebar.style.display = '';
+      if (tabBar) tabBar.style.display = '';
     }
   }
   applyMobileLayout();
