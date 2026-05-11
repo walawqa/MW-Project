@@ -1,5 +1,5 @@
 // MW Project - Service Worker v3 (cache bust)
-const CACHE_NAME = 'mw-project-static-v3';
+const CACHE_NAME = 'mw-project-static-v4';
 const STATIC_ASSETS = [
   './',
   './index.html',
