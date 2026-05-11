@@ -3220,93 +3220,78 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 
 /* ================================================================
-   RESPONSIVE — ŚREDNIE EKRANY (769px – 1200px)
-   Brakujące breakpointy dla desktopowego resize
+   RESPONSIVE FIX — bezpieczna wersja (nie rusza sidebar JS-logic)
    ================================================================ */
 
-/* ── 1. Sidebar auto-zwija się przy wąskim oknie ─────────────── */
+/* 1. Sidebar ma overflow:hidden więc elementy wewnątrz nie mogą
+      go rozciągać — ale na wszelki wypadek dodajemy min-width:0
+      do flex dzieci które mogłyby powodować overflow              */
+#sidebar {
+  min-width: 0;
+}
+.sidebar-logo,
+.sidebar-nav,
+.sidebar-projects,
+.sidebar-bottom {
+  min-width: 0;
+  max-width: 100%;
+}
+.nav-label,
+.user-name,
+.user-email,
+.sidebar-logo-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Zapobieganie overflow na #app i #main-content              */
+#app {
+  min-width: 0;
+  max-width: 100vw;
+}
+#main-content {
+  min-width: 0;
+  max-width: calc(100vw - var(--sidebar-w));
+  overflow-x: hidden;
+}
+#app.sidebar-collapsed #main-content {
+  max-width: calc(100vw - var(--sidebar-collapsed-w));
+}
+
+/* 3. Dash layout na średnich ekranach (769–1100px)              */
 @media (min-width: 769px) and (max-width: 1100px) {
-  #sidebar {
-    width: var(--sidebar-collapsed-w) !important;
+  #main-content {
+    max-width: calc(100vw - var(--sidebar-w));
   }
-  #sidebar .sidebar-logo-text,
-  #sidebar .nav-label,
-  #sidebar .sidebar-projects,
-  #sidebar .user-details,
-  #sidebar .sidebar-section-header span {
-    opacity: 0 !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-  }
-  #sidebar .nav-item    { justify-content: center !important; padding: .42rem !important; }
-  #sidebar .sidebar-nav { align-items: center !important; }
-  #sidebar .sidebar-bottom { justify-content: center !important; padding: .6rem .35rem !important; }
-  #sidebar .user-info   { justify-content: center !important; }
-  #sidebar .sidebar-logo { justify-content: center !important; padding: .85rem .35rem !important; }
-
-  #main-content,
   #app.sidebar-collapsed #main-content {
-    margin-left: var(--sidebar-collapsed-w) !important;
+    max-width: calc(100vw - var(--sidebar-collapsed-w));
   }
-}
+  .dash-new-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-my-tasks-card  { grid-column: 1; grid-row: auto; }
+  .dash-projects-card  { grid-column: 1; grid-row: auto; }
+  .mini-calendar-card  { grid-column: 1; grid-row: auto; }
+  .dash-projects-grid  { max-height: 200px; }
 
-/* ── 2. Dashboard grid: 3 kolumny → 2 kolumny ───────────────── */
-@media (min-width: 769px) and (max-width: 1050px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr 1fr !important;
+  .notes-layout {
+    grid-template-columns: 1fr !important;
   }
-  .stats-row {
-    grid-column: 1 / -1;
-  }
-  .upcoming-tasks  { grid-column: 1; grid-row: auto; }
-  .today-tasks     { grid-column: 2; grid-row: auto; }
-  .mini-calendar-card {
-    grid-column: 1 / -1 !important;
-    grid-row: auto !important;
-  }
-}
-
-/* ── 3. Task modal: 2-kolumnowy layout → 1 kolumna ──────────── */
-@media (min-width: 769px) and (max-width: 960px) {
   .task-modal-body {
     grid-template-columns: 1fr !important;
   }
 }
 
-/* ── 4. Notes layout: sidebar notatek → stack ───────────────── */
-@media (min-width: 769px) and (max-width: 960px) {
-  .notes-layout {
-    grid-template-columns: 1fr !important;
-    height: auto !important;
-  }
-  .note-list {
-    max-height: 220px;
-    overflow-y: auto;
-    border-right: none !important;
-    border-bottom: 1.5px solid var(--border);
-  }
-}
-
-/* ── 5. Project detail stats row ────────────────────────────── */
-@media (min-width: 769px) and (max-width: 960px) {
-  .proj-stat-cards {
-    flex-wrap: wrap;
-  }
-  .proj-stat-card {
-    flex: 1 1 calc(50% - .4rem);
-    min-width: 0;
-  }
-}
-
-/* ── 6. Zapobieganie overflow na #app ────────────────────────── */
+/* 4. Szeroki zakres — dodatkowe zabezpieczenie overflow         */
 @media (min-width: 769px) {
-  #app {
-    min-width: 0;
+  body { overflow-x: hidden; }
+  #view-dashboard,
+  #view-projects,
+  #view-calendar,
+  #view-statistics,
+  #view-notes {
+    max-width: 100%;
     overflow-x: hidden;
-  }
-  #main-content {
-    min-width: 0;
   }
 }
