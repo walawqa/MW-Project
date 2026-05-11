@@ -3217,3 +3217,96 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
   line-height: 1; flex-shrink: 0;
 }
 .card-attach-badge svg { flex-shrink: 0; }
+
+
+/* ================================================================
+   RESPONSIVE — ŚREDNIE EKRANY (769px – 1200px)
+   Brakujące breakpointy dla desktopowego resize
+   ================================================================ */
+
+/* ── 1. Sidebar auto-zwija się przy wąskim oknie ─────────────── */
+@media (min-width: 769px) and (max-width: 1100px) {
+  #sidebar {
+    width: var(--sidebar-collapsed-w) !important;
+  }
+  #sidebar .sidebar-logo-text,
+  #sidebar .nav-label,
+  #sidebar .sidebar-projects,
+  #sidebar .user-details,
+  #sidebar .sidebar-section-header span {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+  #sidebar .nav-item    { justify-content: center !important; padding: .42rem !important; }
+  #sidebar .sidebar-nav { align-items: center !important; }
+  #sidebar .sidebar-bottom { justify-content: center !important; padding: .6rem .35rem !important; }
+  #sidebar .user-info   { justify-content: center !important; }
+  #sidebar .sidebar-logo { justify-content: center !important; padding: .85rem .35rem !important; }
+
+  #main-content,
+  #app.sidebar-collapsed #main-content {
+    margin-left: var(--sidebar-collapsed-w) !important;
+  }
+}
+
+/* ── 2. Dashboard grid: 3 kolumny → 2 kolumny ───────────────── */
+@media (min-width: 769px) and (max-width: 1050px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .stats-row {
+    grid-column: 1 / -1;
+  }
+  .upcoming-tasks  { grid-column: 1; grid-row: auto; }
+  .today-tasks     { grid-column: 2; grid-row: auto; }
+  .mini-calendar-card {
+    grid-column: 1 / -1 !important;
+    grid-row: auto !important;
+  }
+}
+
+/* ── 3. Task modal: 2-kolumnowy layout → 1 kolumna ──────────── */
+@media (min-width: 769px) and (max-width: 960px) {
+  .task-modal-body {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 4. Notes layout: sidebar notatek → stack ───────────────── */
+@media (min-width: 769px) and (max-width: 960px) {
+  .notes-layout {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+  }
+  .note-list {
+    max-height: 220px;
+    overflow-y: auto;
+    border-right: none !important;
+    border-bottom: 1.5px solid var(--border);
+  }
+}
+
+/* ── 5. Project detail stats row ────────────────────────────── */
+@media (min-width: 769px) and (max-width: 960px) {
+  .proj-stat-cards {
+    flex-wrap: wrap;
+  }
+  .proj-stat-card {
+    flex: 1 1 calc(50% - .4rem);
+    min-width: 0;
+  }
+}
+
+/* ── 6. Zapobieganie overflow na #app ────────────────────────── */
+@media (min-width: 769px) {
+  #app {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  #main-content {
+    min-width: 0;
+  }
+}
